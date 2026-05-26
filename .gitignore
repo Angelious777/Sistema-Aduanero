@@ -1,0 +1,39 @@
+# ARCHIVOS QUE NO DEBERÍAN SER SUBIDOS A GIT
+
+# Entorno virtual
+venv/
+.env/
+
+# Archivos Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Archivos temporales
+tmp/
+temp/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Variables de entorno
+.env
+
+# Build
+build/
+dist/
+*.egg-info/
