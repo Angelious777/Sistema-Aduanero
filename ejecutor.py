@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from conexiones import conectar_lp
 from conexiones import conectar_scz
+from logs.logger import registrar_log
 
 # -----------------------------------
 # CONSULTAR LP
@@ -44,6 +45,10 @@ def consultar_lp(codigo):
             "observacion": row[1],
             "fecha": str(row[2])
         })
+    
+    registrar_log(
+        "Consulta enviada a nodo La Paz"
+    )
 
     return resultado
 
