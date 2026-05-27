@@ -22,6 +22,7 @@ Thumbs.db
 
 # Logs
 *.log
+logs.txt
 
 # Archivos temporales
 tmp/
