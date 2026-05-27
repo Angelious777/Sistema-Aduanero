@@ -6,8 +6,16 @@ from monitor import obtener_estado_nodos
 from metricas import obtener_metricas
 from dashboard import construir_dashboard
 from validaciones import validar_codigo
+from flask import render_template
 
 app = Flask(__name__)
+
+@app.route('/')
+def inicio():
+
+    return render_template(
+        'dashboard.html'
+    )
 
 # -----------------------------------
 # TRAZABILIDAD GLOBAL
