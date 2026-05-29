@@ -43,12 +43,15 @@ button:focus-visible {
   outline-offset: 2px;
 }
 .app-shell {
-  display: grid;
-  grid-template-columns: 100px 1fr;
+  display: flex;
   min-height: 100vh;
+}
+.app-shell:has(.sidebar:hover) .main-panel {
+  width: calc(100% - 260px);
 }
 .sidebar {
   width: 100px;
+  min-width: 100px;
   padding: var(--space-lg) var(--space-sm);
   background: rgba(255, 255, 255, 0.95);
   border-right: 1px solid var(--border);
@@ -146,8 +149,14 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
+
+  width: calc(100% - 100px);
+  margin-left: auto;
+
   min-height: 100vh;
   padding: var(--space-xl) var(--space-lg);
+
+  transition: width 0.22s ease;
 }
 .toolbar {
   display: flex;
