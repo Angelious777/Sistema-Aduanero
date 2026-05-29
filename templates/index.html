@@ -1,0 +1,385 @@
+﻿<!DOCTYPE html>
+<html lang='es'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>Sistema Distribuido de Control Aduanero</title>
+  <link rel='stylesheet' href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <div class='app-shell'>
+    <aside class='sidebar'>
+      <div class='sidebar-header'>
+        <div class='brand-label'>Sistema Aduanero</div>
+        <div class='brand-subtitle'>Arquitectura Heterogénea</div>
+      </div>
+      <nav class='sidebar-list'>
+        <button class='sidebar-item active node-toggle' data-node='dashboard' type='button'>
+          <span class='sidebar-icon'>D</span>
+          <span class='sidebar-text'><strong>Dashboard</strong><small>Visión general</small></span>
+        </button>
+        <button class='sidebar-item node-toggle' data-node='coordinator' type='button'>
+          <span class='sidebar-icon'>C</span>
+          <span class='sidebar-text'><strong>Coordinador</strong><small>Orquestación central</small></span>
+        </button>
+        <button class='sidebar-item node-toggle' data-node='lapaz' type='button'>
+          <span class='sidebar-icon'>LP</span>
+          <span class='sidebar-text'><strong>La Paz</strong><small>PostgreSQL</small></span>
+        </button>
+        <button class='sidebar-item node-toggle' data-node='scz' type='button'>
+          <span class='sidebar-icon'>SC</span>
+          <span class='sidebar-text'><strong>Santa Cruz</strong><small>SQL Server</small></span>
+        </button>
+      </nav>
+      <div class='sidebar-footer'>
+        <div class='sidebar-status'><span class='status-dot online'></span> VPN central</div>
+        <div class='sidebar-status'><span class='status-dot online'></span> Red regional</div>
+        <div class='sidebar-status'><span class='status-dot success'></span> 2PC listo</div>
+      </div>
+    </aside>
+    <main class='main-panel'>
+      <header class='toolbar'>
+        <div>
+          <h1>Control Aduanero Distribuido</h1>
+          <p class='toolbar-subtitle' id='page-subtitle'>Estado general del sistema</p>
+        </div>
+        <div class='toolbar-chip'>PostgreSQL + SQL Server</div>
+      </header>
+      <div class='panel-container'>
+        <section class='panel-view active' id='dashboard-panel'>
+          <div class='metric-row'>
+            <article class='metric-card'>
+              <span class='metric-label'>Nodos sincronizados</span>
+              <strong>3</strong>
+            </article>
+            <article class='metric-card'>
+              <span class='metric-label'>Tráfico distribuido</span>
+              <strong>28 trans.</strong>
+            </article>
+            <article class='metric-card'>
+              <span class='metric-label'>Operaciones pendientes</span>
+              <strong>4</strong>
+            </article>
+            <article class='metric-card'>
+              <span class='metric-label'>Fragmentos activos</span>
+              <strong>5</strong>
+            </article>
+          </div>
+          <div class='panel node-connectivity-panel'>
+            <div class='panel-header'>
+              <div>
+                <h2>Estado de nodos</h2>
+                <p>Conectividad física y lógica entre coordinador y nodos regionales</p>
+              </div>
+            </div>
+            <div class='connectivity-grid'>
+              <div class='connection-row'>
+                <div class='connection-name'>Coordinador</div>
+                <span class='status-pill online'>Conectado</span>
+              </div>
+              <div class='connection-row'>
+                <div class='connection-name'>La Paz</div>
+                <span class='status-pill online'>Conectado</span>
+              </div>
+              <div class='connection-row'>
+                <div class='connection-name'>Santa Cruz</div>
+                <span class='status-pill online'>Conectado</span>
+              </div>
+            </div>
+          </div>
+          <div class='panel topology-panel'>
+            <div class='panel-header spaced'>
+              <div>
+                <h2>Topología académica</h2>
+                <p>Fragmentación horizontal y flujo de datos entre nodos</p>
+              </div>
+            </div>
+            <div class='topology-grid'>
+              <article class='topology-node remote-node'>
+                <strong>La Paz</strong>
+                <span>PostgreSQL</span>
+                <div class='node-fragments'><span>PAQUETE_LP</span><span>MOVIMIENTO_LP</span></div>
+              </article>
+              <div class='topology-center'>
+                <span class='topology-label'>Coordinador</span>
+                <span class='topology-status'>SQL Server · Query Parser · 2PC</span>
+              </div>
+              <article class='topology-node remote-node'>
+                <strong>Santa Cruz</strong>
+                <span>SQL Server</span>
+                <div class='node-fragments'><span>PAQUETE_SCZ</span><span>MOVIMIENTO_SCZ</span></div>
+              </article>
+            </div>
+          </div>
+          <div class='panel split-panel'>
+            <div class='compact-panel'>
+              <h3>Actividad reciente</h3>
+              <ul class='status-list'>
+                <li>La Paz envío paquete LP-2026-009 al coordinador</li>
+                <li>Santa Cruz actualizó MOV-981 y espera sync</li>
+                <li>Coordinador generó subconsulta para PAQUETE</li>
+              </ul>
+            </div>
+            <div class='compact-panel'>
+              <h3>Consultas recientes</h3>
+              <ul class='status-list'>
+                <li>SELECT * FROM PAQUETE WHERE region='SCZ'</li>
+                <li>SELECT * FROM MOVIMIENTO WHERE region='LP'</li>
+                <li>Reconstrucción global de CLIENTE_PUBLICO</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+        <section class='panel-view hidden' id='coordinator-panel'>
+          <div class='metric-row'>
+            <article class='metric-card'>
+              <span class='metric-label'>Subconsultas activas</span>
+              <strong>5</strong>
+            </article>
+            <article class='metric-card'>
+              <span class='metric-label'>Fragmentos catalogados</span>
+              <strong>4</strong>
+            </article>
+            <article class='metric-card'>
+              <span class='metric-label'>Transacciones 2PC</span>
+              <strong>2</strong>
+            </article>
+            <article class='metric-card'>
+              <span class='metric-label'>Reconstrucción global</span>
+              <strong>Híbrida</strong>
+            </article>
+          </div>
+          <div class='panel coordinator-core-panel'>
+            <div class='panel-header spaced'>
+              <div>
+                <h2>Coordinador central</h2>
+                <p>Control de Query Parser, planificador de subconsultas y ensamblador de resultados</p>
+              </div>
+              <div class='action-row'>
+                <button class='button-secondary' data-modal='view-reconstruction' type='button'>Ver reconstrucción</button>
+                <button class='button-secondary' data-modal='global-trace' type='button'>Ver trazabilidad</button>
+                <button class='button-primary' data-modal='new-query' type='button'>Simular consulta</button>
+              </div>
+            </div>
+            <div class='coordinator-grid'>
+              <div class='coordinator-card'>
+                <span class='card-label'>Query Parser</span>
+                <p>Detecta fragmentación horizontal y decide qué fragmentos pedir.</p>
+              </div>
+              <div class='coordinator-card'>
+                <span class='card-label'>Planificador</span>
+                <p>Ordena subconsultas para minimizar tráfico entre nodos.</p>
+              </div>
+              <div class='coordinator-card'>
+                <span class='card-label'>Ensamblador</span>
+                <p>Combina resultados regionales en vistas globales.</p>
+              </div>
+            </div>
+          </div>
+          <div class='panel split-panel'>
+            <div class='compact-panel'>
+              <h3>Reconstrucción distribuida</h3>
+              <div class='reconstruction-badge'>PAQUETE_LP ∪ PAQUETE_SCZ → VISTA_GLOBAL_PAQUETE</div>
+              <div class='reconstruction-badge'>CLIENTE_PUBLICO ⨝ CLIENTE_PRIVADO → CLIENTE_GLOBAL</div>
+            </div>
+            <div class='compact-panel'>
+              <h3>Simulación de 2PC</h3>
+              <ul class='status-list'>
+                <li>Fase PREPARE en nodos</li>
+                <li>Validación de respuestas</li>
+                <li>Commit distribuido</li>
+              </ul>
+            </div>
+          </div>
+          <div class='panel'>
+            <div class='panel-header spaced'>
+              <div>
+                <h2>Catálogo de fragmentación</h2>
+                <p>Asignación de fragmentos a tablas globales y nodos físicos.</p>
+              </div>
+            </div>
+            <div class='table-container'>
+              <table class='table'>
+                <thead>
+                  <tr><th>Fragmento</th><th>Nodo</th><th>Tipo</th><th>Tabla global</th><th>Regla</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>PAQUETE_LP</td><td>La Paz</td><td>Horizontal</td><td>VISTA_GLOBAL_PAQUETE</td><td>region='LP'</td></tr>
+                  <tr><td>PAQUETE_SCZ</td><td>Santa Cruz</td><td>Horizontal</td><td>VISTA_GLOBAL_PAQUETE</td><td>region='SCZ'</td></tr>
+                  <tr><td>CLIENTE_PUBLICO</td><td>Coordinador</td><td>Vertical</td><td>CLIENTE_GLOBAL</td><td>id_cliente,nombre</td></tr>
+                  <tr><td>CLIENTE_PRIVADO</td><td>Coordinador</td><td>Vertical</td><td>CLIENTE_GLOBAL</td><td>documento_identidad,direccion</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        <section class='panel-view hidden' id='lapaz-panel'>
+          <div class='metric-row'>
+            <article class='metric-card'>
+              <span class='metric-label'>Nodo</span>
+              <strong>La Paz</strong>
+            </article>
+            <article class='metric-card'>
+              <span class='metric-label'>Conectividad VPN</span>
+              <strong>Online</strong>
+            </article>
+            <article class='metric-card'>
+              <span class='metric-label'>Pendientes</span>
+              <strong>2</strong>
+            </article>
+            <article class='metric-card'>
+              <span class='metric-label'>Autonomía</span>
+              <strong>Local</strong>
+            </article>
+          </div>
+          <div class='panel split-panel'>
+            <div class='compact-panel'>
+              <h3>Fragmentación horizontal</h3>
+              <ul class='status-list'>
+                <li>Datos locales: PAQUETE_LP y MOVIMIENTO_LP.</li>
+                <li>Solo registros con region='LP'.</li>
+                <li>Sólo envíos y movimientos regionales.</li>
+              </ul>
+            </div>
+            <div class='compact-panel'>
+              <h3>Cola local</h3>
+              <ul class='status-list'>
+                <li>2 transacciones pendientes.</li>
+                <li>Última sincronización 11:47.</li>
+                <li>Preparado para envío asíncrono.</li>
+              </ul>
+            </div>
+          </div>
+          <div class='panel'>
+            <div class='panel-header spaced'>
+              <div>
+                <h2>Tabla PAQUETE_LP</h2>
+                <p>Fragmento horizontal de paquetes en La Paz.</p>
+              </div>
+              <button class='button-secondary' data-modal='sync-lp' type='button'>Enviar al coordinador</button>
+            </div>
+            <div class='table-container'>
+              <table class='table'>
+                <thead><tr><th>ID</th><th>Destino</th><th>Prioridad</th><th>Estado</th><th>Sync</th></tr></thead>
+                <tbody>
+                  <tr><td>LP-2026-009</td><td>SCZ</td><td>Alta</td><td>En tránsito</td><td>Parcial</td></tr>
+                  <tr><td>LP-2026-011</td><td>SCZ</td><td>Media</td><td>Inspección</td><td>Pendiente</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class='panel'>
+            <div class='panel-header spaced'>
+              <div>
+                <h2>Tabla MOVIMIENTO_LP</h2>
+                <p>Eventos de movimiento regional en La Paz.</p>
+              </div>
+              <button class='button-secondary' data-modal='register-movement-lp' type='button'>Registrar movimiento</button>
+            </div>
+            <div class='table-container'>
+              <table class='table'>
+                <thead><tr><th>ID</th><th>Paquete</th><th>Ubicación</th><th>Estado</th><th>Hora</th></tr></thead>
+                <tbody>
+                  <tr><td>MOV-441</td><td>LP-2026-009</td><td>La Paz</td><td>Listo</td><td>11:33</td></tr>
+                  <tr><td>MOV-442</td><td>LP-2026-011</td><td>El Alto</td><td>En cola</td><td>11:39</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+        <section class='panel-view hidden' id='scz-panel'>
+          <div class='metric-row'>
+            <article class='metric-card'>
+              <span class='metric-label'>Nodo</span>
+              <strong>Santa Cruz</strong>
+            </article>
+            <article class='metric-card'>
+              <span class='metric-label'>Conectividad VPN</span>
+              <strong>Online</strong>
+            </article>
+            <article class='metric-card'>
+              <span class='metric-label'>Pendientes</span>
+              <strong>1</strong>
+            </article>
+            <article class='metric-card'>
+              <span class='metric-label'>Autonomía</span>
+              <strong>Local</strong>
+            </article>
+          </div>
+          <div class='panel split-panel'>
+            <div class='compact-panel'>
+              <h3>Fragmentación horizontal</h3>
+              <ul class='status-list'>
+                <li>Datos locales: PAQUETE_SCZ y MOVIMIENTO_SCZ.</li>
+                <li>Solo registros con region='SCZ'.</li>
+                <li>Sincronización programada con coordinador.</li>
+              </ul>
+            </div>
+            <div class='compact-panel'>
+              <h3>Cola regional</h3>
+              <ul class='status-list'>
+                <li>1 transacción pendiente.</li>
+                <li>Última sincronización 11:45.</li>
+                <li>Envío asíncrono activo.</li>
+              </ul>
+            </div>
+          </div>
+          <div class='panel'>
+            <div class='panel-header spaced'>
+              <div>
+                <h2>Tabla PAQUETE_SCZ</h2>
+                <p>Fragmento horizontal de paquetes en Santa Cruz.</p>
+              </div>
+              <button class='button-secondary' data-modal='sync-scz' type='button'>Enviar al coordinador</button>
+            </div>
+            <div class='table-container'>
+              <table class='table'>
+                <thead><tr><th>ID</th><th>Destino</th><th>Prioridad</th><th>Estado</th><th>Sync</th></tr></thead>
+                <tbody>
+                  <tr><td>SCZ-2026-021</td><td>LP</td><td>Alta</td><td>Inspección</td><td>Pendiente</td></tr>
+                  <tr><td>SCZ-2026-025</td><td>LP</td><td>Media</td><td>Listo</td><td>Listo</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class='panel'>
+            <div class='panel-header spaced'>
+              <div>
+                <h2>Tabla MOVIMIENTO_SCZ</h2>
+                <p>Eventos de movimiento regional en Santa Cruz.</p>
+              </div>
+              <button class='button-secondary' data-modal='register-movement-scz' type='button'>Registrar movimiento</button>
+            </div>
+            <div class='table-container'>
+              <table class='table'>
+                <thead><tr><th>ID</th><th>Paquete</th><th>Ubicación</th><th>Estado</th><th>Hora</th></tr></thead>
+                <tbody>
+                  <tr><td>MOV-981</td><td>SCZ-2026-021</td><td>Santa Cruz</td><td>En ruta</td><td>11:28</td></tr>
+                  <tr><td>MOV-982</td><td>SCZ-2026-025</td><td>Montero</td><td>Recibido</td><td>11:35</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div class='modal-overlay hidden' id='modal-overlay'>
+    <div class='modal'>
+      <div class='modal-header'>
+        <div>
+          <h2 id='modal-title'>Modal técnico</h2>
+          <p id='modal-subtitle'>Detalle académico</p>
+        </div>
+        <button class='close-button' id='modal-close' type='button'>×</button>
+      </div>
+      <div class='modal-body' id='modal-body'></div>
+      <div class='modal-actions'>
+        <button class='button-secondary' id='modal-cancel' type='button'>Cerrar</button>
+        <button class='button-primary' id='modal-confirm' type='button'>Aceptar</button>
+      </div>
+    </div>
+  </div>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

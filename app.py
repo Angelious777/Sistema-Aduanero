@@ -14,7 +14,7 @@ app = Flask(__name__)
 def inicio():
 
     return render_template(
-        'dashboard.html'
+        'index.html'
     )
 
 # -----------------------------------

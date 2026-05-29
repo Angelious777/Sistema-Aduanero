@@ -3,8 +3,24 @@ import pyodbc
 
 from config import LP_CONFIG, SCZ_CONFIG
 
+
 # -----------------------------------
-# CONEXION POSTGRESQL
+# CENTRAL
+# -----------------------------------
+
+def conectar_central():
+
+    return pyodbc.connect(
+
+        'DRIVER={ODBC Driver 17 for SQL Server};'
+        'SERVER=localhost;'
+        'DATABASE=DB_CENTRAL;'
+        'UID=sa;'
+        'PWD=123456'
+    )
+
+# -----------------------------------
+# CONEXION LA PAZ
 # -----------------------------------
 
 def conectar_lp():
@@ -18,7 +34,7 @@ def conectar_lp():
     )
 
 # -----------------------------------
-# CONEXION SQL SERVER
+# CONEXION SCZ
 # -----------------------------------
 
 def conectar_scz():

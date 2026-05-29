@@ -1,32 +1,24 @@
+from conexiones import conectar_central
+
 # -----------------------------------
 # CATALOGO DE FRAGMENTOS
 # -----------------------------------
 
-CATALOGO = {
 
-    "PAQUETE": {
+def obtener_fragmentos():
+    conn = conectar_central()
+    cur = conn.cursor()
+    
+    cur.execute("""
 
-        "La Paz": {
-            "fragmento": "paquete_lp",
-            "motor": "PostgreSQL"
-        },
+        SELECT
+            nombre_fragmento,
+            nodo_fisico
 
-        "Santa Cruz": {
-            "fragmento": "paquete_scz",
-            "motor": "SQLServer"
-        }
-    },
+        FROM catalogo_fragmentos
 
-    "MOVIMIENTO": {
-
-        "La Paz": {
-            "fragmento": "movimiento_lp",
-            "motor": "PostgreSQL"
-        },
-
-        "Santa Cruz": {
-            "fragmento": "movimiento_scz",
-            "motor": "SQLServer"
-        }
-    }
-}
+    """)
+    datos = cur.fetchall()
+    
+    return datos
+    
