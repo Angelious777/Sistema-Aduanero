@@ -171,6 +171,41 @@ CREATE TABLE movimiento_global (
 );
 GO
 
+CREATE TABLE catalogo_fragmentacion (
+    id_fragmento VARCHAR(20) PRIMARY KEY,
+
+    nombre_fragmento VARCHAR(100) NOT NULL,
+
+    tabla_original VARCHAR(100) NOT NULL,
+
+    tipo_fragmentacion VARCHAR(30) NOT NULL,
+
+    nodo_ubicacion VARCHAR(50) NOT NULL,
+
+    descripcion VARCHAR(300)
+);
+GO
+
+
+CREATE TABLE log_sincronizacion (
+    id_log VARCHAR(20) PRIMARY KEY,
+
+    fecha_sincronizacion DATETIME NOT NULL,
+
+    nodo_origen VARCHAR(20) NOT NULL,
+
+    tabla_afectada VARCHAR(100) NOT NULL,
+
+    operacion VARCHAR(20) NOT NULL,
+
+    cantidad_registros INT NOT NULL,
+
+    estado VARCHAR(20) NOT NULL,
+
+    observacion VARCHAR(300)
+);
+GO
+
 
 INSERT INTO estado VALUES (1,'Registrado');
 INSERT INTO estado VALUES (2,'En tránsito');
@@ -217,4 +252,105 @@ INSERT INTO ruta VALUES
     'ALM-LP-001',
     550.00,
     14
+);
+
+
+INSERT INTO catalogo_fragmentacion VALUES
+(
+    'FRG-001',
+    'paquete_operativo_lp',
+    'paquete',
+    'Hibrida',
+    'LP',
+    'Datos operativos de paquetes registrados en La Paz'
+);
+
+INSERT INTO catalogo_fragmentacion VALUES
+(
+    'FRG-002',
+    'paquete_financiero_lp',
+    'paquete',
+    'Hibrida',
+    'LP',
+    'Datos financieros de paquetes registrados en La Paz'
+);
+
+INSERT INTO catalogo_fragmentacion VALUES
+(
+    'FRG-003',
+    'paquete_operativo_scz',
+    'paquete',
+    'Hibrida',
+    'SCZ',
+    'Datos operativos de paquetes registrados en Santa Cruz'
+);
+
+INSERT INTO catalogo_fragmentacion VALUES
+(
+    'FRG-004',
+    'paquete_financiero_scz',
+    'paquete',
+    'Hibrida',
+    'SCZ',
+    'Datos financieros de paquetes registrados en Santa Cruz'
+);
+
+INSERT INTO catalogo_fragmentacion VALUES
+(
+    'FRG-005',
+    'movimiento_lp',
+    'movimiento',
+    'Horizontal',
+    'LP',
+    'Movimientos pertenecientes a paquetes registrados en LP'
+);
+
+INSERT INTO catalogo_fragmentacion VALUES
+(
+    'FRG-006',
+    'movimiento_scz',
+    'movimiento',
+    'Horizontal',
+    'SCZ',
+    'Movimientos pertenecientes a paquetes registrados en SCZ'
+);
+
+INSERT INTO catalogo_fragmentacion VALUES
+(
+    'FRG-007',
+    'cliente',
+    'cliente',
+    'Replicacion Total',
+    'LP-SCZ-CENTRAL',
+    'Tabla replicada en todos los nodos'
+);
+
+INSERT INTO catalogo_fragmentacion VALUES
+(
+    'FRG-008',
+    'estado',
+    'estado',
+    'Replicacion Total',
+    'LP-SCZ-CENTRAL',
+    'Tabla replicada en todos los nodos'
+);
+
+INSERT INTO catalogo_fragmentacion VALUES
+(
+    'FRG-009',
+    'almacen',
+    'almacen',
+    'Replicacion Total',
+    'LP-SCZ-CENTRAL',
+    'Tabla replicada en todos los nodos'
+);
+
+INSERT INTO catalogo_fragmentacion VALUES
+(
+    'FRG-010',
+    'ruta',
+    'ruta',
+    'Replicacion Total',
+    'LP-SCZ-CENTRAL',
+    'Tabla replicada en todos los nodos'
 );

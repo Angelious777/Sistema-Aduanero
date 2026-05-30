@@ -154,6 +154,23 @@ CREATE TABLE movimiento_lp (
 );
 
 
+CREATE TABLE cola_pendientes (
+    id_pendiente VARCHAR(20) PRIMARY KEY,
+
+    tabla_afectada VARCHAR(100) NOT NULL,
+
+    tipo_operacion VARCHAR(20) NOT NULL,
+
+    id_registro VARCHAR(50) NOT NULL,
+
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    estado VARCHAR(20) NOT NULL,
+
+    observacion VARCHAR(300)
+);
+
+
 INSERT INTO estado VALUES (1,'Registrado');
 INSERT INTO estado VALUES (2,'En tránsito');
 INSERT INTO estado VALUES (3,'En almacén');
