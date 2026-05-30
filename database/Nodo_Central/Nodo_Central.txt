@@ -6,201 +6,215 @@ GO
 USE nodo_central;
 GO
 
--- =========================================================
--- TABLA: CLIENTE_GLOBAL
--- =========================================================
+CREATE TABLE cliente (
+    id_cliente VARCHAR(20) PRIMARY KEY,
 
-CREATE TABLE cliente_global (
-    id_cliente INT IDENTITY(1,1) PRIMARY KEY,
+    nombres VARCHAR(100) NOT NULL,
+    apellido_paterno VARCHAR(100) NOT NULL,
+    apellido_materno VARCHAR(100),
 
-    nombre VARCHAR(100) NOT NULL,
     telefono VARCHAR(20),
 
-    ci VARCHAR(30),
-    direccion VARCHAR(200),
-    email VARCHAR(100)
+    documento_identidad VARCHAR(30) NOT NULL UNIQUE,
+
+    direccion VARCHAR(250),
+
+    email VARCHAR(100),
+
+    fecha_registro DATETIME DEFAULT GETDATE()
 );
-
--- =========================================================
--- TABLA: ALMACEN
--- =========================================================
-
-CREATE TABLE almacen (
-    id_almacen INT IDENTITY(1,1) PRIMARY KEY,
-
-    nombre VARCHAR(100) NOT NULL,
-    ciudad VARCHAR(50),
-    direccion VARCHAR(200),
-
-    nodo_responsable VARCHAR(20)
-);
-
--- =========================================================
--- TABLA: ESTADO
--- =========================================================
+GO
 
 CREATE TABLE estado (
-    id_estado INT IDENTITY(1,1) PRIMARY KEY,
-    nombre VARCHAR(50) UNIQUE NOT NULL
+    id_estado INT PRIMARY KEY,
+    descripcion VARCHAR(100) NOT NULL
+);
+GO
+
+CREATE TABLE almacen (
+    id_almacen VARCHAR(20) PRIMARY KEY,
+
+    nombre VARCHAR(100) NOT NULL,
+
+    ciudad VARCHAR(100) NOT NULL,
+
+    direccion VARCHAR(250) NOT NULL,
+
+    nodo_responsable VARCHAR(20) NOT NULL
+);
+GO
+
+INSERT INTO almacen
+VALUES
+(
+    'ALM-LP-001',
+    'Almacén Central La Paz',
+    'La Paz',
+    'Zona Central',
+    'LP'
 );
 
--- =========================================================
--- TABLA: RUTA
--- =========================================================
+INSERT INTO almacen
+VALUES
+(
+    'ALM-SCZ-001',
+    'Almacén Central Santa Cruz',
+    'Santa Cruz',
+    'Zona Central',
+    'SCZ'
+);
+
 
 CREATE TABLE ruta (
-    id_ruta INT IDENTITY(1,1) PRIMARY KEY,
+    id_ruta VARCHAR(20) PRIMARY KEY,
 
-    origen VARCHAR(50),
-    destino VARCHAR(50),
+    id_almacen_origen VARCHAR(20) NOT NULL,
 
-    descripcion TEXT
+    id_almacen_destino VARCHAR(20) NOT NULL,
+
+    distancia DECIMAL(10,2) NOT NULL,
+
+    tiempo_estimado INT NOT NULL,
+
+    CONSTRAINT fk_ruta_origen
+        FOREIGN KEY (id_almacen_origen)
+        REFERENCES almacen(id_almacen),
+
+    CONSTRAINT fk_ruta_destino
+        FOREIGN KEY (id_almacen_destino)
+        REFERENCES almacen(id_almacen)
 );
+GO
 
--- =========================================================
--- TABLA: PAQUETE_GLOBAL
--- =========================================================
 
 CREATE TABLE paquete_global (
-    id_paquete INT IDENTITY(1,1) PRIMARY KEY,
+    id_paquete VARCHAR(20) PRIMARY KEY,
 
-    codigo_rastreo VARCHAR(50) UNIQUE NOT NULL,
+    codigo_rastreo VARCHAR(50) NOT NULL UNIQUE,
 
-    id_cliente_remitente INT NOT NULL,
-    id_cliente_destinatario INT NOT NULL,
+    id_cliente_remitente VARCHAR(20) NOT NULL,
+    id_cliente_destinatario VARCHAR(20) NOT NULL,
 
-    peso DECIMAL(10,2),
+    id_estado INT NOT NULL,
+
+    id_ruta VARCHAR(20) NOT NULL,
+
+    id_almacen_origen VARCHAR(20) NOT NULL,
+    id_almacen_destino VARCHAR(20) NOT NULL,
+    id_almacen_actual VARCHAR(20) NOT NULL,
+
+    peso DECIMAL(10,2) NOT NULL,
+
     volumen DECIMAL(10,2),
+
+    descripcion VARCHAR(300),
 
     prioridad VARCHAR(20),
 
     valor_declarado DECIMAL(12,2),
-    costo_envio DECIMAL(12,2),
+
     seguro DECIMAL(12,2),
 
-    id_estado_actual INT,
-    id_ruta INT,
-
-    id_almacen_origen INT,
-    id_almacen_destino INT,
-    id_almacen_actual INT,
-
-    nodo_origen VARCHAR(20),
+    costo_envio DECIMAL(12,2),
 
     fecha_registro DATETIME DEFAULT GETDATE(),
 
-    FOREIGN KEY (id_cliente_remitente)
-        REFERENCES cliente_global(id_cliente),
+    CONSTRAINT fk_pg_cliente_remitente
+        FOREIGN KEY (id_cliente_remitente)
+        REFERENCES cliente(id_cliente),
 
-    FOREIGN KEY (id_cliente_destinatario)
-        REFERENCES cliente_global(id_cliente),
+    CONSTRAINT fk_pg_cliente_destinatario
+        FOREIGN KEY (id_cliente_destinatario)
+        REFERENCES cliente(id_cliente),
 
-    FOREIGN KEY (id_estado_actual)
+    CONSTRAINT fk_pg_estado
+        FOREIGN KEY (id_estado)
         REFERENCES estado(id_estado),
 
-    FOREIGN KEY (id_ruta)
+    CONSTRAINT fk_pg_ruta
+        FOREIGN KEY (id_ruta)
         REFERENCES ruta(id_ruta),
 
-    FOREIGN KEY (id_almacen_origen)
+    CONSTRAINT fk_pg_almacen_origen
+        FOREIGN KEY (id_almacen_origen)
         REFERENCES almacen(id_almacen),
 
-    FOREIGN KEY (id_almacen_destino)
+    CONSTRAINT fk_pg_almacen_destino
+        FOREIGN KEY (id_almacen_destino)
         REFERENCES almacen(id_almacen),
 
-    FOREIGN KEY (id_almacen_actual)
+    CONSTRAINT fk_pg_almacen_actual
+        FOREIGN KEY (id_almacen_actual)
         REFERENCES almacen(id_almacen)
 );
-
--- =========================================================
--- TABLA: MOVIMIENTO_GLOBAL
--- =========================================================
-
-CREATE TABLE movimiento_global (
-    id_movimiento INT IDENTITY(1,1) PRIMARY KEY,
-
-    id_paquete INT NOT NULL,
-
-    descripcion VARCHAR(200),
-    ubicacion VARCHAR(100),
-
-    fecha_movimiento DATETIME DEFAULT GETDATE(),
-
-    nodo_responsable VARCHAR(20),
-
-    FOREIGN KEY (id_paquete)
-        REFERENCES paquete_global(id_paquete)
-);
-
--- =========================================================
--- TABLAS DE INFRAESTRUCTURA DISTRIBUIDA
--- =========================================================
-
-CREATE TABLE catalogo_fragmentacion (
-    id_fragmento INT IDENTITY(1,1) PRIMARY KEY,
-
-    nombre_fragmento VARCHAR(100),
-    nodo VARCHAR(50),
-    motor_bd VARCHAR(50),
-
-    tabla_base VARCHAR(50),
-    tipo_fragmentacion VARCHAR(50)
-);
-
-CREATE TABLE log_sincronizacion (
-    id_log INT IDENTITY(1,1) PRIMARY KEY,
-
-    nodo_origen VARCHAR(20),
-    operacion VARCHAR(100),
-
-    tabla_afectada VARCHAR(100),
-
-    fecha_log DATETIME DEFAULT GETDATE(),
-
-    estado VARCHAR(30),
-    mensaje VARCHAR(300)
-);
-
-CREATE TABLE cola_pendientes (
-    id_pendiente INT IDENTITY(1,1) PRIMARY KEY,
-
-    nodo_origen VARCHAR(20),
-
-    operacion VARCHAR(50),
-    tabla_afectada VARCHAR(50),
-
-    id_registro INT,
-
-    fecha_registro DATETIME DEFAULT GETDATE(),
-
-    estado VARCHAR(30)
-);
-
-CREATE TABLE transacciones_distribuidas (
-    id_transaccion INT IDENTITY(1,1) PRIMARY KEY,
-
-    operacion VARCHAR(100),
-
-    nodos_involucrados VARCHAR(100),
-
-    fecha_inicio DATETIME DEFAULT GETDATE(),
-
-    estado VARCHAR(30)
-);
-
--- =========================================================
--- DATOS BASE
--- =========================================================
-
-INSERT INTO estado(nombre) VALUES
-('Registrado'),
-('En almacén'),
-('En tránsito'),
-('Llegó a destino'),
-('Entregado');
-
-INSERT INTO almacen(nombre, ciudad, direccion, nodo_responsable)
-VALUES
-('Almacén Central LP', 'La Paz', 'Zona Central', 'LP'),
-('Almacén Central SCZ', 'Santa Cruz', 'Zona Industrial', 'SCZ');
 GO
 
+
+CREATE TABLE movimiento_global (
+    id_movimiento VARCHAR(20) PRIMARY KEY,
+
+    id_paquete VARCHAR(20) NOT NULL,
+
+    id_almacen VARCHAR(20) NOT NULL,
+
+    fecha_movimiento DATETIME NOT NULL,
+
+    observacion VARCHAR(300),
+
+    CONSTRAINT fk_movglobal_paquete
+        FOREIGN KEY (id_paquete)
+        REFERENCES paquete_global(id_paquete),
+
+    CONSTRAINT fk_movglobal_almacen
+        FOREIGN KEY (id_almacen)
+        REFERENCES almacen(id_almacen)
+);
+GO
+
+
+INSERT INTO estado VALUES (1,'Registrado');
+INSERT INTO estado VALUES (2,'En tránsito');
+INSERT INTO estado VALUES (3,'En almacén');
+INSERT INTO estado VALUES (4,'En reparto');
+INSERT INTO estado VALUES (5,'Entregado');
+INSERT INTO estado VALUES (6,'Retenido');
+INSERT INTO estado VALUES (7,'Devuelto');
+
+
+INSERT INTO almacen VALUES
+(
+    'ALM-LP-001',
+    'Almacén Central La Paz',
+    'La Paz',
+    'Zona Central',
+    'LP'
+);
+
+INSERT INTO almacen VALUES
+(
+    'ALM-SCZ-001',
+    'Almacén Central Santa Cruz',
+    'Santa Cruz',
+    'Zona Central',
+    'SCZ'
+);
+
+
+
+INSERT INTO ruta VALUES
+(
+    'RUT-LP-SCZ',
+    'ALM-LP-001',
+    'ALM-SCZ-001',
+    550.00,
+    14
+);
+
+INSERT INTO ruta VALUES
+(
+    'RUT-SCZ-LP',
+    'ALM-SCZ-001',
+    'ALM-LP-001',
+    550.00,
+    14
+);
