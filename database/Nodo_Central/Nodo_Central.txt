@@ -44,26 +44,6 @@ CREATE TABLE almacen (
 );
 GO
 
-INSERT INTO almacen
-VALUES
-(
-    'ALM-LP-001',
-    'Almacén Central La Paz',
-    'La Paz',
-    'Zona Central',
-    'LP'
-);
-
-INSERT INTO almacen
-VALUES
-(
-    'ALM-SCZ-001',
-    'Almacén Central Santa Cruz',
-    'Santa Cruz',
-    'Zona Central',
-    'SCZ'
-);
-
 
 CREATE TABLE ruta (
     id_ruta VARCHAR(20) PRIMARY KEY,

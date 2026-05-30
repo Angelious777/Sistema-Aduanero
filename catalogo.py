@@ -8,17 +8,20 @@ from conexiones import conectar_central
 def obtener_fragmentos():
     conn = conectar_central()
     cur = conn.cursor()
-    
-    cur.execute("""
-
-        SELECT
-            nombre_fragmento,
-            nodo_fisico
-
-        FROM catalogo_fragmentos
-
-    """)
-    datos = cur.fetchall()
-    
-    return datos
-    
+    try:
+        cur.execute("""
+            SELECT
+                id_fragmento,
+                nombre_fragmento,
+                tabla_original,
+                tipo_fragmentacion,
+                nodo_ubicacion,
+                descripcion
+            FROM catalogo_fragmentacion
+        """)
+        columnas = [desc[0] for desc in cur.description]
+        datos = [dict(zip(columnas, fila)) for fila in cur.fetchall()]
+        return datos
+    finally:
+        cur.close()
+        conn.close()

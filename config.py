@@ -5,7 +5,7 @@
 # PostgreSQL - La Paz
 LP_CONFIG = {
     "host": "26.133.137.249",
-    "database": "lapaz_db",
+    "database": "nodo_lp",
     "user": "postgres",
     "password": "postgres",
     "port": "5432"
@@ -15,7 +15,7 @@ LP_CONFIG = {
 SCZ_CONFIG = {
     "driver": "ODBC Driver 17 for SQL Server",
     "server": "26.52.7.220",
-    "database": "santacruz_db",
+    "database": "nodo_scz",
     "user": "sa",
     "password": "1234"
 }
