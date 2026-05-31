@@ -1,0 +1,84 @@
+<section id="transacciones">
+
+    <div class="explicacion-modulo">
+        <p><strong>Protocolo de Compromiso de Dos Fases (2PC):</strong> Garantiza la atomicidad global en operaciones críticas interdepartamentales (ej. Transferencia de aduana de origen a destino). Impide la existencia de registros huérfanos o inconsistencias duras en la red.</p>
+    </div>
+
+    <div class="diagrama-2pc-contenedor">
+        <h3>Monitoreo de Fase Atómica en Tiempo Real</h3>
+        <div class="nodos-2pc-flex">
+            <div class="nodo-2pc-box central" id="nodo-2pc-coordinador">
+                <h4>Coordinador Central</h4>
+                <div class="estado-fase-badge" id="badge-coord-2pc">INACTIVO</div>
+            </div>
+            
+            <div class="lineas-conexion-2pc">
+                <div class="linea-canal-2pc" id="canal-lp-2pc">
+                    <span class="flecha-msg" id="msg-lp-2pc">...</span>
+                </div>
+                <div class="linea-canal-2pc" id="canal-scz-2pc">
+                    <span class="flecha-msg" id="msg-scz-2pc">...</span>
+                </div>
+            </div>
+
+            <div class="nodos-sub-flex">
+                <div class="nodo-2pc-box regional" id="nodo-2pc-lp">
+                    <h5>Sede La Paz</h5>
+                    <p>PostgreSQL</p>
+                    <div class="estado-fase-badge" id="badge-lp-2pc">ESPERANDO</div>
+                </div>
+                <div class="nodo-2pc-box regional" id="nodo-2pc-scz">
+                    <h5>Sede Santa Cruz</h5>
+                    <p>SQL Server</p>
+                    <div class="estado-fase-badge" id="badge-scz-2pc">ESPERANDO</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="acciones-transaccionales-grid margin-top-md">
+        <button id="btnPrepare" class="btn-secundario btn-prepare">
+            <span class="btn-icon-2pc">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+            </span>
+            Fase 1: Enviar PREPARE (Solicitud de Votos)
+        </button>
+        
+        <button id="btnCommit" class="btn-success btn-commit disabled" disabled>
+            <span class="btn-icon-2pc">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </span>
+            Fase 2: Confirmar COMMIT Global
+        </button>
+        
+        <button id="btnAbort" class="btn-danger btn-abort disabled" disabled>
+            <span class="btn-icon-2pc">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            </span>
+            Fase 2: Forzar ABORT (Rollback de Seguridad)
+        </button>
+    </div>
+
+    <div class="contenedor-tabla-panel margin-top-lg">
+        <div class="tabla-header">
+            <h2>Bitácora de Estados de Coordinación Global</h2>
+        </div>
+        <div class="responsive-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID Transacción</th>
+                        <th>Fecha de Inicio</th>
+                        <th>Tipo de Operación Interna</th>
+                        <th>Estado Actual del Protocolo</th>
+                        <th>Voto Nodos</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaTransacciones">
+                    <tr class="placeholder-row"><td colspan="5">Cargando registros de integridad...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</section>

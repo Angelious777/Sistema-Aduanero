@@ -1,0 +1,1058 @@
+/* ==========================================================================
+   1. VARIABLES DE DISEÑO (Inspiradas en la paleta azul y limpia del informe)
+   ========================================================================== */
+:root {
+    --azul-primario: #1e40af;       /* Azul oscuro institucional */
+    --azul-medio: #3b82f6;          /* Azul vibrante para enlaces y estados */
+    --azul-claro: #eff6ff;          /* Fondo suave para destacar contenedores */
+    --gris-oscuro: #1e293b;         /* Texto principal y títulos de sidebar */
+    --gris-medio: #64748b;          /* Subtítulos y metadatos */
+    --gris-claro: #f8fafc;          /* Fondo general de la aplicación */
+    --blanco: #ffffff;
+    --borde: #e2e8f0;               /* Separadores limpios */
+    
+    /* Paleta de estados operativos */
+    --success: #10b981;             /* Online / Commit / Sincronizado */
+    --success-bg: #ecfdf5;
+    --warning: #f59e0b;             /* Prepare / En proceso / Cola */
+    --warning-bg: #fffbeb;
+    --danger: #ef4444;              /* Abort / Offline / Retenido */
+    --danger-bg: #fef2f2;
+}
+
+/* ==========================================================================
+   2. REGLAS BASE Y LAYOUT
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--gris-claro);
+    color: var(--gris-oscuro);
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Ocultar secciones inactivas por defecto (Manejado por JS) */
+.vistas-contenedor section {
+    display: none;
+}
+
+.vistas-contenedor section.section-active {
+    display: block;
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+/* ==========================================================================
+   3. SIDEBAR (Barra lateral de navegación)
+   ========================================================================== */
+.sidebar {
+    width: 280px;
+    background-color: var(--blanco);
+    border-right: 1px solid var(--borde);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    z-index: 100;
+}
+
+.sidebar .logo {
+    padding: 24px;
+    border-bottom: 1px solid var(--borde);
+}
+
+.sidebar .logo h2 {
+    font-size: 1.25rem;
+    color: var(--azul-primario);
+    font-weight: 700;
+}
+
+.sidebar .logo .subtitulo {
+    font-size: 0.75rem;
+    color: var(--gris-medio);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-top: 4px;
+}
+
+/* Estilos para separadores de categoría en Sidebar */
+.sidebar-categoria {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gris-medio);
+    font-weight: 700;
+    margin-top: 18px;
+    margin-bottom: 6px;
+    padding-left: 16px;
+}
+
+/* Modal de Detalles de Encomienda */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1000; opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+.modal-overlay.open { opacity: 1; pointer-events: auto; }
+.modal-contenedor {
+    background-color: var(--blanco);
+    border-radius: 12px; width: 90%; max-width: 750px;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    overflow: hidden; transform: translateY(-20px);
+    transition: transform 0.3s ease;
+}
+.modal-overlay.open .modal-contenedor { transform: translateY(0); }
+.modal-header {
+    background-color: var(--azul-primario); color: var(--blanco);
+    padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;
+}
+.modal-body { padding: 24px; max-height: 75vh; overflow-y: auto; }
+.close-modal { background: none; border: none; color: var(--blanco); font-size: 1.5rem; cursor: pointer; }
+
+/* Mapa Operativo del Dashboard */
+.mapa-operativo-contenedor {
+    background-color: var(--blanco); border: 1px solid var(--borde);
+    border-radius: 12px; padding: 24px; margin-top: 24px;
+}
+.mapa-flex { display: flex; gap: 24px; justify-content: center; align-items: center; margin-top: 15px; }
+.mapa-nodo-card {
+    background-color: var(--gris-claro); border: 1px solid var(--borde);
+    border-radius: 8px; padding: 16px; width: 220px; text-align: center;
+}
+.mapa-nodo-card.lp { border-left: 4px solid var(--azul-medio); }
+.mapa-nodo-card.scz { border-left: 4px solid var(--warning); }
+.mapa-contador { font-size: 1.8rem; font-weight: 700; color: var(--gris-oscuro); display: block; margin-top: 5px; }
+
+/* Timeline de Seguimiento */
+.timeline-seguimiento { display: flex; justify-content: space-between; margin: 30px 0; position: relative; }
+.timeline-seguimiento::before {
+    content: ''; position: absolute; top: 15px; left: 0; width: 100%; height: 3px; background-color: var(--borde); z-index: 1;
+}
+.timeline-nodo { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 100px; }
+.timeline-punto { width: 30px; height: 30px; border-radius: 50%; background-color: var(--blanco); border: 3px solid var(--gris-medio); transition: all 0.3s; }
+.timeline-nodo.active .timeline-punto { border-color: var(--azul-primario); background-color: var(--azul-medio); }
+.timeline-nodo.completed .timeline-punto { border-color: var(--success); background-color: var(--success); }
+.timeline-label { font-size: 0.75rem; font-weight: 600; margin-top: 8px; text-align: center; color: var(--gris-medio); }
+.timeline-nodo.active .timeline-label { color: var(--azul-primario); }
+.timeline-nodo.completed .timeline-label { color: var(--success); }
+
+.menu-navegacion {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-grow: 1;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: var(--gris-medio);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    background-color: var(--azul-claro);
+    color: var(--azul-medio);
+}
+
+.nav-link.active {
+    background-color: var(--azul-primario);
+    color: var(--blanco);
+}
+
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid var(--borde);
+    font-size: 0.8rem;
+    color: var(--gris-medio);
+}
+
+/* ==========================================================================
+   4. CONTENIDO PRINCIPAL Y TOPBAR
+   ========================================================================== */
+.contenido-principal {
+    margin-left: 280px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Previene desbordamientos en flexbox */
+}
+
+.topbar {
+    height: 70px;
+    background-color: var(--blanco);
+    border-bottom: 1px solid var(--borde);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+}
+
+.topbar h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--gris-oscuro);
+}
+
+.info-sistema {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.badge-nodo {
+    background-color: var(--gris-oscuro);
+    color: var(--blanco);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+.reloj {
+    font-size: 0.9rem;
+    color: var(--gris-medio);
+    font-variant-numeric: tabular-nums;
+}
+
+.vistas-contenedor {
+    padding: 40px;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Explicaciones del módulo */
+.explicacion-modulo {
+    background-color: var(--blanco);
+    border-left: 4px solid var(--azul-medio);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 30px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--gris-medio);
+}
+
+.explicacion-modulo strong {
+    color: var(--gris-oscuro);
+}
+
+/* ==========================================================================
+   5. COMPONENTES REUTILIZABLES (Tarjetas, Botones y Tablas)
+   ========================================================================== */
+
+/* Tarjetas */
+.tarjetas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    margin-bottom: 35px;
+}
+
+.tarjeta {
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.tarjeta h3 {
+    font-size: 0.9rem;
+    color: var(--gris-medio);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.metric-valor {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--azul-primario);
+    display: block;
+}
+
+.meta-info {
+    font-size: 0.8rem;
+    color: var(--gris-medio);
+    margin-top: 8px;
+}
+
+/* Botones */
+.btn-primario, .btn-secundario, .btn-success, .btn-danger {
+    padding: 12px 24px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+}
+
+.btn-primario { background-color: var(--azul-primario); color: var(--blanco); }
+.btn-primario:hover { background-color: #1d4ed8; }
+
+.btn-secundario { background-color: var(--azul-claro); color: var(--azul-medio); }
+.btn-secundario:hover { background-color: #dbeafe; }
+
+.btn-success { background-color: var(--success); color: var(--blanco); }
+.btn-success:hover { background-color: #059669; }
+
+.btn-danger { background-color: var(--danger); color: var(--blanco); }
+.btn-danger:hover { background-color: #dc2626; }
+
+button.disabled, button:disabled {
+    background-color: var(--borde) !important;
+    color: var(--gris-medio) !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
+
+/* Tablas Estilo Limpio e Informe */
+.contenedor-tabla-panel {
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    overflow: hidden;
+}
+
+.tabla-header, .tabla-header-alert, .tabla-header-alerta {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--borde);
+}
+
+.tabla-header h2, .tabla-header h3, .tabla-header-alert h3, .tabla-header-alerta h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gris-oscuro);
+}
+
+.tabla-subtitulo, .alerta-tecnica, .alerta-tecnica-sub {
+    font-size: 0.8rem;
+    color: var(--gris-medio);
+    margin-top: 4px;
+    display: block;
+}
+
+.alerta-tecnica, .alerta-tecnica-sub {
+    color: var(--azul-medio);
+    font-style: italic;
+}
+
+.responsive-table {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+th {
+    background-color: var(--gris-claro);
+    color: var(--gris-medio);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--borde);
+}
+
+td {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--borde);
+    color: var(--gris-oscuro);
+    line-height: 1.4;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+tr:hover td {
+    background-color: var(--gris-claro);
+}
+
+/* Badges / Etiquetas de Estado */
+.badge-status, .badge-status-inline {
+    padding: 4px 10px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.badge-status.info { background-color: var(--azul-claro); color: var(--azul-medio); }
+.badge-status.success { background-color: var(--success-bg); color: var(--success); }
+.badge-status.alert { background-color: var(--danger-bg); color: var(--danger); }
+.badge-status.waiting { background-color: var(--warning-bg); color: var(--warning); }
+
+.status-indicator {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.status-indicator.online { color: var(--success); }
+.status-indicator.offline { color: var(--danger); }
+
+code.codigo-nodo, code.codigo-fragmento, code.codigo-motor, code.codigo-paquete {
+    font-family: monospace;
+    background-color: var(--gris-claro);
+    color: var(--gris-oscuro);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    border: 1px solid var(--borde);
+}
+
+code.codigo-fragmento {
+    color: var(--azul-primario);
+    background-color: var(--azul-claro);
+}
+
+.text-truncate-sql {
+    max-width: 350px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--gris-medio);
+}
+
+/* Margin utilitarios */
+.margin-top-md { margin-top: 24px; }
+.margin-top-lg { margin-top: 35px; }
+
+/* ==========================================================================
+   6. ESTILOS ESPECÍFICOS PARA MÓDULO: CONSULTAS
+   ========================================================================== */
+.busqueda-contenedor {
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    margin-bottom: 30px;
+}
+
+.input-grupo {
+    display: flex;
+    gap: 12px;
+    position: relative;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 16px;
+    font-size: 1.1rem;
+    color: var(--gris-medio);
+}
+
+.input-grupo input {
+    flex-grow: 1;
+    padding: 14px 14px 14px 48px;
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+    background-color: var(--gris-claro);
+}
+
+.input-grupo input:focus {
+    outline: none;
+    border-color: var(--azul-medio);
+    background-color: var(--blanco);
+}
+
+/* Pipeline de Consulta Federada */
+.flujo-consulta-contenedor {
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 30px;
+}
+
+.flujo-consulta-contenedor h3 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: var(--gris-medio);
+    letter-spacing: 0.05em;
+    margin-bottom: 20px;
+}
+
+.flujo-linea-tiempo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    overflow-x: auto;
+    padding: 10px 0;
+}
+
+.flujo-paso {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 140px;
+    text-align: center;
+    opacity: 0.4;
+    transition: all 0.3s ease;
+}
+
+.circulo-paso {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--gris-medio);
+    color: var(--blanco);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.etiqueta-paso {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gris-oscuro);
+}
+
+.flujo-flecha {
+    color: var(--borde);
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+/* Estados dinámicos de procesamiento del Pipeline */
+.flujo-paso.paso-procesando {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+.flujo-paso.paso-procesando .circulo-paso {
+    background-color: var(--warning);
+    animation: pulseWarning 1s infinite alternate;
+}
+
+.flujo-paso.paso-completado {
+    opacity: 1;
+}
+
+.flujo-paso.paso-completado .circulo-paso {
+    background-color: var(--azul-primario);
+}
+
+.flujo-paso.paso-completado .etiqueta-paso {
+    color: var(--azul-primario);
+}
+
+/* Controladores de Resultados */
+.resultado-oculto {
+    display: none;
+}
+
+.resultado-visible {
+    display: block;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.panel-dos-columnas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.bloque-resultado {
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.bloque-resultado h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--azul-primario);
+    border-bottom: 2px solid var(--azul-claro);
+    padding-bottom: 8px;
+}
+
+.detalles-ficha p {
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed var(--gris-claro);
+    padding-bottom: 6px;
+}
+
+.detalles-ficha p strong {
+    color: var(--gris-medio);
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   7. ESTILOS ESPECÍFICOS PARA MÓDULO: CATALOGO
+   ========================================================================== */
+.badge-vertical { background-color: #f0fdfa; color: #0d9488; border: 1px solid #ccfbf1; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
+.badge-horizontal { background-color: #f8fafc; color: #475569; border: 1px solid #e2e8f0; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
+
+.esquema-distribucion-contenedor {
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.esquema-distribucion-contenedor h3 {
+    font-size: 1rem;
+    color: var(--gris-oscuro);
+    margin-bottom: 20px;
+}
+
+.nodos-distribucion-flex {
+    display: flex;
+    gap: 24px;
+}
+
+.nodo-bloque-grafico {
+    flex: 1;
+    border: 1px solid var(--borde);
+    border-top: 4px solid var(--azul-primario);
+    border-radius: 8px;
+    padding: 20px;
+    background-color: var(--gris-claro);
+}
+
+.nodo-bloque-grafico h4 {
+    font-size: 0.95rem;
+    margin-bottom: 14px;
+    color: var(--gris-oscuro);
+}
+
+.lista-fragmentos-graficos {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.item-fragmento-tipo {
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.item-fragmento-tipo small {
+    display: block;
+    color: var(--gris-medio);
+    font-weight: normal;
+    margin-top: 2px;
+}
+
+/* ==========================================================================
+   8. ESTILOS ESPECÍFICOS PARA MÓDULO: SINCRONIZACION
+   ========================================================================== */
+.panel-control-sincronizacion {
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    padding: 24px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.estado-sincronizacion-cards {
+    display: flex;
+    gap: 24px;
+}
+
+.mini-card-estado {
+    font-size: 0.9rem;
+}
+
+.mini-card-estado span {
+    color: var(--gris-medio);
+    margin-right: 6px;
+}
+
+.text-success { color: var(--success); }
+.text-alert { color: var(--warning); font-weight: bold; }
+
+.badge-prioridad {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+.badge-prioridad.alta { background-color: var(--danger-bg); color: var(--danger); }
+.badge-prioridad.media { background-color: var(--warning-bg); color: var(--warning); }
+.badge-prioridad.baja { background-color: var(--azul-claro); color: var(--azul-medio); }
+
+/* Animación inline del cargador */
+.spinner-inline {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: var(--blanco);
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+}
+.spinner-inline.hidden { display: none; }
+
+/* ==========================================================================
+   9. ESTILOS ESPECÍFICOS PARA MÓDULO: TRANSACCIONES (2PC)
+   ========================================================================== */
+.diagrama-2pc-contenedor {
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.diagrama-2pc-contenedor h3 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: var(--gris-medio);
+    margin-bottom: 24px;
+}
+
+.nodos-2pc-flex {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.nodo-2pc-box {
+    border: 2px solid var(--borde);
+    border-radius: 10px;
+    padding: 16px 20px;
+    text-align: center;
+    background-color: var(--gris-claro);
+    width: 180px;
+    transition: all 0.3s ease;
+}
+
+.nodo-2pc-box.central {
+    border-color: var(--azul-primario);
+    background-color: var(--blanco);
+}
+
+.nodo-2pc-box h4, .nodo-2pc-box h5 {
+    font-size: 0.95rem;
+    color: var(--gris-oscuro);
+    margin-bottom: 6px;
+}
+
+.nodo-2pc-box p {
+    font-size: 0.8rem;
+    color: var(--gris-medio);
+    margin-bottom: 8px;
+}
+
+.estado-fase-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    background-color: var(--borde);
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.estado-fase-badge.waiting { background-color: var(--warning); color: var(--blanco); }
+.estado-fase-badge.success { background-color: var(--success); color: var(--blanco); }
+.estado-fase-badge.danger { background-color: var(--danger); color: var(--blanco); }
+
+.lineas-conexion-2pc {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    justify-content: center;
+}
+
+.linea-canal-2pc {
+    height: 2px;
+    background-color: var(--borde);
+    width: 120px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flecha-msg {
+    font-size: 0.7rem;
+    font-weight: 700;
+    position: absolute;
+    top: -18px;
+    background-color: var(--blanco);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--borde);
+    color: var(--gris-medio);
+}
+
+.flecha-msg.envia-msg { color: var(--warning); border-color: var(--warning); }
+.flecha-msg.recibe-msg { color: var(--success); border-color: var(--success); }
+
+.nodos-sub-flex {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Contenedor y alineación del icono en botones de transacciones */
+.acciones-transaccionales-grid button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-icon-2pc {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    color: inherit; /* Hereda el color del texto del botón */
+}
+
+/* Comportamiento visual de botones deshabilitados por lógica de fases */
+.acciones-transaccionales-grid button.disabled, 
+.acciones-transaccionales-grid button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* ==========================================================================
+   10. ESTILOS ESPECÍFICOS PARA MÓDULO: MONITOREO
+   ========================================================================== */
+.topologia-red-contenedor {
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    padding: 30px;
+    border-radius: 12px;
+}
+
+.topologia-red-contenedor h3 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: var(--gris-medio);
+    margin-bottom: 30px;
+}
+
+.esquema-topologia {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.nodo-topologia {
+    background-color: var(--blanco);
+    border: 2px solid var(--borde);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    width: 240px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+}
+
+.nodo-topologia.central-top {
+    border-color: var(--azul-primario);
+    background-color: var(--azul-claro);
+}
+
+.icono-servidor {
+    font-size: 2rem;
+    margin-bottom: 8px;
+}
+
+.nodo-topologia h4 {
+    font-size: 0.95rem;
+    color: var(--gris-oscuro);
+}
+
+.lbl-rol {
+    font-size: 0.75rem;
+    color: var(--azul-medio);
+    font-weight: 600;
+}
+
+.enlaces-topologia {
+    height: 60px;
+    width: 340px;
+    position: relative;
+}
+
+/* Simulación de las líneas en estrella de la red */
+.linea-enlace {
+    position: absolute;
+    top: 0;
+    height: 2px;
+    background-color: var(--success); /* Línea verde si está online */
+    width: 180px;
+    transform-origin: top left;
+}
+
+#enlace-lp-line {
+    left: 50%;
+    transform: rotate(125deg);
+}
+
+#enlace-scz-line {
+    left: 50%;
+    transform: rotate(55deg);
+}
+
+.nodos-regionales-topologia {
+    display: flex;
+    justify-content: space-between;
+    width: 600px;
+    margin-top: 30px;
+}
+
+.nodo-topologia.regional-top.online {
+    border-color: var(--success);
+    position: relative;
+}
+
+/* Efecto de pulso en los nodos vivos */
+.nodo-topologia.regional-top.online::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--success);
+    animation: heartBeat 1.5s infinite;
+}
+
+.badge-motor {
+    font-size: 0.75rem;
+    font-family: monospace;
+    display: block;
+    margin: 4px 0;
+    color: var(--gris-medio);
+}
+
+.ping-indicator {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--success);
+}
+
+/* Componentes visuales del Pipeline Académico */
+.pipeline-step {
+    background-color: var(--blanco); border: 1px solid var(--borde);
+    padding: 10px 14px; border-radius: 6px; font-size: 0.85rem;
+    color: var(--gris-oscuro); border-left: 4px solid var(--gris-medio);
+    transition: all 0.3s ease;
+}
+.pipeline-step.active-step {
+    border-left-color: var(--azul-primario); background-color: var(--azul-claro);
+    font-weight: 600; transform: scale(1.02);
+}
+.pipeline-arrow { text-align: center; color: var(--gris-medio); font-weight: 700; font-size: 0.9rem; }
+
+/* Estilos para la Ficha Acerca de */
+#acerca ul {
+    margin: 0;
+    padding-left: 20px;
+}
+#acerca li {
+    position: relative;
+    list-style: none;
+    margin-bottom: 6px;
+    font-weight: 600;
+    color: var(--gris-oscuro);
+}
+#acerca li::before {
+    content: "•";
+    color: var(--azul-primario);
+    font-weight: bold;
+    display: inline-block; 
+    width: 1em;
+    margin-left: -1em;
+}
+
+/* ==========================================================================
+   11. ANIMACIONES (Keyframes)
+   ========================================================================== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulseWarning {
+    from { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+    to { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+}
+
+@keyframes heartBeat {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.4; }
+    100% { transform: scale(1); opacity: 1; }
+}

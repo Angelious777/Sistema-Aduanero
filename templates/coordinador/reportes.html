@@ -1,0 +1,49 @@
+<section id="reportes">
+    <div class="explicacion-modulo">
+        <strong>Generador de Reportes y Descargas Analíticas.</strong> Esta sección consolida agrupaciones estadísticas del estado del negocio. Permite exportar datos depurados y firmados por el Nodo Coordinador.
+    </div>
+
+    <div class="tarjetas-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+        <div class="tarjeta" style="border-top: 4px solid var(--azul-medio);">
+            <h3>Encomiendas por Estado</h3>
+            <p style="font-size: 0.85rem; color: var(--gris-medio); margin: 8px 0 16px 0;">Muestra la distribución porcentual actual de cargas en la red nacional.</p>
+            <div style="font-size: 0.85rem; display: flex; flex-direction: column; gap: 4px;">
+                <div style="display:flex; justify-content:space-between;"><span>En Tránsito:</span><strong>50%</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>Entregadas:</span><strong>25%</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>Retenidas:</span><strong>25%</strong></div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 20px;">
+                <button class="btn-primario" style="padding: 8px 12px; font-size: 0.8rem;" onclick="simularExportacion('Estados', 'PDF')">📄 Exportar PDF</button>
+                <button class="btn-secundario" style="padding: 8px 12px; font-size: 0.8rem;" onclick="simularExportacion('Estados', 'Excel')">📊 Excel</button>
+            </div>
+        </div>
+
+        <div class="tarjeta" style="border-top: 4px solid var(--warning);">
+            <h3>Movimientos por Nodo</h3>
+            <p style="font-size: 0.85rem; color: var(--gris-medio); margin: 8px 0 16px 0;">Auditoría de volumen transaccional capturado por las infraestructuras regionales.</p>
+            <div style="font-size: 0.85rem; display: flex; flex-direction: column; gap: 4px;">
+                <div style="display:flex; justify-content:space-between;"><span>NODO_LA_PAZ (Pg):</span><strong>2 registros</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>NODO_SANTA_CRUZ (SQL):</span><strong>2 registros</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>Eficiencia de Enlace:</span><strong>99.8%</strong></div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 20px;">
+                <button class="btn-primario" style="padding: 8px 12px; font-size: 0.8rem;" onclick="simularExportacion('Nodos', 'PDF')">📄 Exportar PDF</button>
+                <button class="btn-secundario" style="padding: 8px 12px; font-size: 0.8rem;" onclick="simularExportacion('Nodos', 'Excel')">📊 Excel</button>
+            </div>
+        </div>
+
+        <div class="tarjeta" style="border-top: 4px solid var(--success);">
+            <h3>Clientes & Consistencia</h3>
+            <p style="font-size: 0.85rem; color: var(--gris-medio); margin: 8px 0 16px 0;">Métricas de consistencia de los esquemas replicados y altas de clientes.</p>
+            <div style="font-size: 0.85rem; display: flex; flex-direction: column; gap: 4px;">
+                <div style="display:flex; justify-content:space-between;"><span>Clientes unificados:</span><strong>4 registros</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>Operaciones en Cola:</span><strong>3 diferidas</strong></div>
+                <div style="display:flex; justify-content:space-between;"><span>Integridad Referencial:</span><strong>100% OK</strong></div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 20px;">
+                <button class="btn-primario" style="padding: 8px 12px; font-size: 0.8rem;" onclick="simularExportacion('Clientes', 'PDF')">📄 Exportar PDF</button>
+                <button class="btn-secundario" style="padding: 8px 12px; font-size: 0.8rem;" onclick="simularExportacion('Clientes', 'Excel')">📊 Excel</button>
+            </div>
+        </div>
+    </div>
+</section>

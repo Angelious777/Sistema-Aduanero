@@ -1,0 +1,59 @@
+<section id="seguimiento">
+    <div class="explicacion-modulo">
+        <strong>Seguimiento Estructural en Línea.</strong> Ingrese el código de control aduanero para reconstruir el estado actual del paquete a lo largo del pipeline de transporte interdepartamental.
+    </div>
+
+    <div class="busqueda-contenedor" style="max-width: 600px; margin: 0 auto 30px auto; text-align: center;">
+        <h3 style="font-size: 1rem; color: var(--gris-oscuro); margin-bottom: 12px;">Consola de Rastreo Nacional</h3>
+        <div style="display: flex; gap: 12px;">
+            <input type="text" id="txt-rastreo-codigo" placeholder="Ej: PK-LP-2026-001" style="flex: 1; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; text-transform: uppercase; font-family: monospace; font-size: 1.1rem; text-align: center;">
+            <button id="btn-ejecutar-rastreo" class="btn-primario">Localizar Encomienda</button>
+        </div>
+        <small id="rastreo-error" style="color: var(--danger); display: block; margin-top: 8px; font-weight: 600;"></small>
+    </div>
+
+    <div id="card-resultado-seguimiento" class="bloque-resultado resultado-oculto" style="max-width: 900px; margin: 0 auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--azul-claro); padding-bottom: 12px; margin-bottom: 20px;">
+            <h3 style="margin: 0;" id="txt-res-codigo">ENCOMIENDA: PK-XXXX</h3>
+            <span class="badge-status success" id="txt-res-estado">Estado</span>
+        </div>
+
+        <div class="timeline-seguimiento">
+            <div class="timeline-nodo" id="step-registrado">
+                <div class="timeline-punto"></div>
+                <div class="timeline-label">Registrado</div>
+            </div>
+            <div class="timeline-nodo" id="step-despachado">
+                <div class="timeline-punto"></div>
+                <div class="timeline-label">Despachado</div>
+            </div>
+            <div class="timeline-nodo" id="step-transito">
+                <div class="timeline-punto"></div>
+                <div class="timeline-label">En Tránsito</div>
+            </div>
+            <div class="timeline-nodo" id="step-recibido">
+                <div class="timeline-punto"></div>
+                <div class="timeline-label">Recibido</div>
+            </div>
+            <div class="timeline-nodo" id="step-entregado">
+                <div class="timeline-punto"></div>
+                <div class="timeline-label">Entregado</div>
+            </div>
+        </div>
+
+        <div class="panel-dos-columnas" style="margin-top: 24px;">
+            <div style="background-color: var(--gris-claro); padding: 16px; border-radius: 8px;">
+                <h4 style="font-size: 0.9rem; color: var(--azul-primario); margin-bottom: 8px;">Logística Compartida</h4>
+                <p style="font-size: 0.85rem; margin-bottom: 4px;"><strong>Ruta:</strong> <span id="txt-res-ruta">--</span></p>
+                <p style="font-size: 0.85rem; margin-bottom: 4px;"><strong>Remitente:</strong> <span id="txt-res-remitente">--</span></p>
+                <p style="font-size: 0.85rem;"><strong>Detalle:</strong> <span id="txt-res-desc">--</span></p>
+            </div>
+            <div style="background-color: var(--gris-claro); padding: 16px; border-radius: 8px;">
+                <h4 style="font-size: 0.9rem; color: var(--azul-primario); margin-bottom: 8px;">Último Punto de Control</h4>
+                <p style="font-size: 0.85rem; margin-bottom: 4px;"><strong>Ubicación:</strong> <span id="txt-res-ubica">--</span></p>
+                <p style="font-size: 0.85rem; margin-bottom: 4px;"><strong>Evento:</strong> <span id="txt-res-evento">--</span></p>
+                <p style="font-size: 0.85rem;"><strong>Nodo Proveedor:</strong> <code class="codigo-nodo" id="txt-res-nodo">--</code></p>
+            </div>
+        </div>
+    </div>
+</section>

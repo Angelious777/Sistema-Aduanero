@@ -1,0 +1,48 @@
+<section id="consultas">
+    <div class="explicacion-modulo">
+        <strong>Módulo Académico: Motor de Consultas Federadas.</strong> Esta pantalla demuestra paso a paso cómo el Nodo Coordinador descompone, optimiza, localiza y ensabla una subconsulta distribuida en base al catálogo de fragmentos.
+    </div>
+
+    <div class="busqueda-contenedor" style="max-width: 650px; margin: 0 auto 24px auto;">
+        <div style="display: flex; gap: 12px;">
+            <input type="text" id="input-query-codigo" placeholder="Ingrese Código a Evaluar (Ej: PK-LP-2026-001)" style="flex: 1; padding: 12px; border: 1px solid var(--borde); border-radius: 8px; text-transform: uppercase; font-family: monospace; text-align: center; font-size: 1.1rem;">
+            <button id="btn-ejecutar-query-parser" class="btn-primario" style="padding: 0 24px;">Explicar Plan de Ejecución</button>
+        </div>
+    </div>
+
+    <div class="panel-dos-columnas" id="panel-pipeline-distribuido" style="display: none; gap: 24px;">
+        
+        <div class="bloque-resultado" style="flex: 1;">
+            <h3>Flujo Interno del API Gateway & Motor</h3>
+            <div class="pipeline-flujo-vertical" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                <div class="pipeline-step" id="step-gateway"><strong>1. API Gateway:</strong> Petición HTTPS interceptada correctamente.</div>
+                <div class="pipeline-arrow">↓</div>
+                <div class="pipeline-step" id="step-parser"><strong>2. Query Parser:</strong> Árbol sintáctico generado (Tokenización).</div>
+                <div class="pipeline-arrow">↓</div>
+                <div class="pipeline-step" id="step-catalogo"><strong>3. Catálogo de Datos:</strong> Mapeo de fragmentación resuelto por prefijo/origen.</div>
+                <div class="pipeline-arrow">↓</div>
+                <div class="pipeline-step" id="step-optimizador"><strong>4. Optimizador Distrib.:</strong> Plan algebraico minimizado (Reducción de costos).</div>
+                <div class="pipeline-arrow">↓</div>
+                <div class="pipeline-step" id="step-planificador"><strong>5. Planificador Ext.:</strong> Generando subconsultas en rampa regional remota.</div>
+                <div class="pipeline-arrow">↓</div>
+                <div class="pipeline-step" id="step-ensamblador"><strong>6. Ensamblador Global:</strong> Unión Vertical pura (JOIN) efectuada con éxito.</div>
+            </div>
+        </div>
+
+        <div style="flex: 1.2; display: flex; flex-direction: column; gap: 16px;">
+            
+            <div class="tarjeta" style="padding: 16px; background-color: var(--gris-claro); border: 1px solid var(--borde);">
+                <h4 style="margin-bottom: 10px; color: var(--azul-primario);">Métricas de Resolución Estructural</h4>
+                <p style="font-size: 0.85rem; margin-bottom: 4px;"><strong>Fragmentos Utilizados:</strong> <code class="codigo-fragmento" id="lbl-tech-fragments">--</code></p>
+                <p style="font-size: 0.85rem; margin-bottom: 4px;"><strong>Nodo Físico Consultado:</strong> <code class="codigo-nodo" id="lbl-tech-nodo">--</code></p>
+                <p style="font-size: 0.85rem;"><strong>Tiempo de Respuesta Estimado:</strong> <span id="lbl-tech-time" style="font-weight: 700; color: var(--success);">0 ms</span></p>
+            </div>
+
+            <div class="bloque-resultado" style="margin: 0; flex: 1;">
+                <h3>Resultado Final Ensamblado (Capa de Abstracción)</h3>
+                <pre id="json-resultado-output" style="background-color: #0f172a; color: #38bdf8; padding: 14px; border-radius: 8px; font-family: monospace; font-size: 0.8rem; overflow-x: auto; max-height: 250px; margin-top: 10px; border: 1px solid #1e293b;"></pre>
+            </div>
+        </div>
+
+    </div>
+</section>

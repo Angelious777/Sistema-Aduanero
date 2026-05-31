@@ -1,0 +1,176 @@
+<section id="dashboard" class="section-active">
+    <div class="explicacion-modulo">
+        <strong>Módulo 1: Vista Operativa Consolidada y Estado de Red.</strong> Este panel calcula en tiempo real métricas unificadas escaneando de manera transparente las colecciones fragmentadas de los nodos regionales, las transacciones pendientes en cola y el estado de conectividad nacional.
+    </div>
+
+    <div class="tarjetas-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div class="tarjeta metric-card">
+            <div class="tarjeta-info">
+                <h3>Encomiendas Totales</h3>
+                <span class="metric-valor" id="dash-totales">0</span>
+            </div>
+            <p class="meta-info">Unificadas vía UNION</p>
+        </div>
+        <div class="tarjeta metric-card">
+            <div class="tarjeta-info">
+                <h3>En Tránsito</h3>
+                <span class="metric-valor" id="dash-transito" style="color: var(--azul-medio);">0</span>
+            </div>
+            <p class="meta-info">Filtro operacional</p>
+        </div>
+        <div class="tarjeta metric-card">
+            <div class="tarjeta-info">
+                <h3>Entregadas</h3>
+                <span class="metric-valor" id="dash-entregadas" style="color: var(--success);">0</span>
+            </div>
+            <p class="meta-info">Destino final conforme</p>
+        </div>
+        <div class="tarjeta metric-card">
+            <div class="tarjeta-info">
+                <h3>Pendientes / Retenidos</h3>
+                <span class="metric-valor" id="dash-pendientes" style="color: var(--danger);">0</span>
+            </div>
+            <p class="meta-info">Validación arancelaria</p>
+        </div>
+        <div class="tarjeta metric-card">
+            <div class="tarjeta-info">
+                <h3>Clientes Registrados</h3>
+                <span class="metric-valor" id="dash-clientes">0</span>
+            </div>
+            <p class="meta-info">Unión Vertical Asegurada</p>
+        </div>
+        <div class="tarjeta metric-card">
+            <div class="tarjeta-info">
+                <h3>Movimientos del Día</h3>
+                <span class="metric-valor" id="dash-movimientos" style="color: var(--warning);">0</span>
+            </div>
+            <p class="meta-info">Logs de auditoría local</p>
+        </div>
+
+        <div class="tarjeta status-card" style="border-left: 4px solid var(--azul-primario);">
+            <div class="tarjeta-info">
+                <h3>Nodo La Paz</h3>
+                <span class="status-indicator online">● Conectado</span>
+            </div>
+            <p class="meta-info">PostgreSQL (Occidente)</p>
+        </div>
+        <div class="tarjeta status-card" style="border-left: 4px solid var(--warning);">
+            <div class="tarjeta-info">
+                <h3>Nodo Santa Cruz</h3>
+                <span class="status-indicator online">● Conectado</span>
+            </div>
+            <p class="meta-info">SQL Server (Oriente)</p>
+        </div>
+        <div class="tarjeta metric-card" style="border-top: 2px solid var(--danger);">
+            <div class="tarjeta-info">
+                <h3>Consistencia Global</h3>
+                <span class="metric-valor" id="metric-pendientes">0</span>
+            </div>
+            <p class="meta-info">Operaciones en cola diferida</p>
+        </div>
+        <div class="tarjeta metric-card" style="border-top: 2px solid var(--success);">
+            <div class="tarjeta-info">
+                <h3>Consultas Federadas</h3>
+                <span class="metric-valor" id="metric-consultas">0</span>
+            </div>
+            <p class="meta-info">Despachadas con éxito</p>
+        </div>
+    </div>
+
+    <div class="panel-dos-columnas" style="margin-bottom: 24px;">
+        <div class="contenedor-tabla-panel">
+            <div class="tabla-header">
+                <h3>Actividad Reciente del Sistema</h3>
+                <span class="tabla-subtitulo">Últimos eventos capturados de manera federada</span>
+            </div>
+            <div class="responsive-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha / Hora</th>
+                            <th>Encomienda</th>
+                            <th>Evento</th>
+                            <th>Nodo Propietario</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-actividad-reciente">
+                        <tr class="placeholder-row"><td colspan="4">Cargando eventos de red...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mapa-operativo-contenedor" style="margin-top: 0;">
+            <div class="tabla-header">
+                <h3>Mapa Operativo Nacional</h3>
+                <span class="tabla-subtitulo">Distribución y carga de procesamiento por nodo regional</span>
+            </div>
+            <div class="mapa-flex">
+                <div class="mapa-nodo-card lp">
+                    <strong>Sede Occidental (LP)</strong>
+                    <p style="font-size: 0.8rem; color: var(--gris-medio);">Motor: PostgreSQL</p>
+                    <span class="mapa-contador" id="mapa-count-lp">0</span>
+                    <small style="color: var(--azul-medio);">Paquetes Locales</small>
+                </div>
+                <div class="mapa-flecha">↔</div>
+                <div class="mapa-nodo-card scz">
+                    <strong>Sede Oriental (SCZ)</strong>
+                    <p style="font-size: 0.8rem; color: var(--gris-medio);">Motor: MS SQL Server</p>
+                    <span class="mapa-contador" id="mapa-count-scz">0</span>
+                    <small style="color: var(--warning);">Paquetes Locales</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-tablas-layout">
+        <div class="contenedor-tabla-panel">
+            <div class="tabla-header">
+                <h3>Vista Consolidada de Encomiendas Nacionales</h3>
+                <span class="tabla-subtitulo">Origen conceptual mediante reconstrucción: <code>PAQUETE_GLOBAL</code></span>
+            </div>
+            <div class="responsive-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código Rastreo</th>
+                            <th>Descripción del Contenido</th>
+                            <th>Origen</th>
+                            <th>Destino</th>
+                            <th>Costo Envío (Bs)</th>
+                            <th>Estado Actual</th>
+                            <th>Sede Propietaria</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-paquetes">
+                        <tr class="placeholder-row"><td colspan="7">Cargando registros consolidados...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="contenedor-tabla-panel margin-top-md">
+            <div class="tabla-header">
+                <h3>Historial Unificado de Controles Operativos</h3>
+                <span class="tabla-subtitulo">Origen conceptual mediante reconstrucción: <code>MOVIMIENTO_GLOBAL</code></span>
+            </div>
+            <div class="responsive-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha y Hora</th>
+                            <th>Código Paquete</th>
+                            <th>Punto de Control (Almacén)</th>
+                            <th>Acción Logística / Estado</th>
+                            <th>Observación Aduanera</th>
+                            <th>Nodo Responsable</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-movimientos-global">
+                        <tr class="placeholder-row"><td colspan="6">Sincronizando línea de tiempo general...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>

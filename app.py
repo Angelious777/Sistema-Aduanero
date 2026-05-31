@@ -8,17 +8,27 @@ from dashboard import construir_dashboard
 from validaciones import validar_codigo
 from flask import render_template
 
+# 1. Importamos el Blueprint que contiene todas las rutas y mocks del Coordinador
+from routes.coordinador import coordinador_bp
+
 app = Flask(__name__)
 
+# Configuración de una clave secreta necesaria para las sesiones simuladas de Flask
+app.secret_key = 'clave_secreta_coordinador_aduanero'
+
+# 2. Registramos el Blueprint en la aplicación Flask
+# Al dejar url_prefix en '/', tomamos el control de la raíz visual del sistema
+app.register_blueprint(coordinador_bp, url_prefix='/')
+
+# Tu ruta de inicio original ahora redirecciona internamente al index del coordinador dentro de su directorio
 @app.route('/')
 def inicio():
-
     return render_template(
-        'index.html'
+        'coordinador/index.html'
     )
 
 # -----------------------------------
-# TRAZABILIDAD GLOBAL
+# TRAZABILIDAD GLOBAL (Mantenida sin alteraciones)
 # -----------------------------------
 
 @app.route('/trazabilidad/<codigo>')
@@ -35,7 +45,7 @@ def trazabilidad(codigo):
     return jsonify(resultado)
 
 # -----------------------------------
-# OPERACIONES PENDIENTES
+# OPERACIONES PENDIENTES (Mantenida sin alteraciones)
 # -----------------------------------
 
 @app.route('/pendientes')
@@ -44,7 +54,7 @@ def pendientes():
     return jsonify(obtener_pendientes())
 
 # -----------------------------------
-# ACTUALIZAR ESTADO
+# ACTUALIZAR ESTADO (Mantenida sin alteraciones)
 # -----------------------------------
 @app.route('/actualizar_estado', methods=['PUT'])
 def cambiar_estado():

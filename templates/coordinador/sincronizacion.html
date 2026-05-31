@@ -1,0 +1,70 @@
+<section id="sincronizacion">
+
+    <div class="explicacion-modulo">
+        <p><strong>Motor de Consistencia Eventual (Capítulo 3.6):</strong> Administra las colas de réplicas diferidas entre nodos logísticos. Si un nodo regional realiza actualizaciones operando de forma aislada, el demonio central procesa la cola de transacciones pendientes para unificar los fragmentos globales.</p>
+    </div>
+
+    <div class="panel-control-sincronizacion">
+        <div class="estado-sincronizacion-cards">
+            <div class="mini-card-estado">
+                <span>Cola La Paz:</span>
+                <strong id="cola-lp-estado" class="text-success">0 Pendientes</strong>
+            </div>
+            <div class="mini-card-estado">
+                <span>Cola Santa Cruz:</span>
+                <strong id="cola-scz-estado" class="text-success">0 Pendientes</strong>
+            </div>
+        </div>
+        <button id="btnSincronizar" class="btn-primario btn-icono">
+            <span>🔄</span> Ejecutar Dominio de Sincronización
+            <span class="spinner-inline hidden" id="sync-spinner"></span>
+        </button>
+    </div>
+
+    <div class="contenedor-tabla-panel margin-top-md">
+        <div class="tabla-header-alerta">
+            <h3>Cola de Operaciones Pendientes (Tabla_Operaciones_Pendientes)</h3>
+            <p class="alerta-tecnica-sub">Registros en espera de propagación asíncrona para garantizar la consistencia definitiva.</p>
+        </div>
+        <div class="responsive-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID Registro</th>
+                        <th>Nodo de Origen</th>
+                        <th>Acción Operativa Pendiente</th>
+                        <th>Fecha de Captura</th>
+                        <th>Prioridad</th>
+                        <th>Estado en Cola</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaPendientes">
+                    <tr class="placeholder-row"><td colspan="6">No hay transacciones pendientes en cola. Canales sincronizados.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="contenedor-tabla-panel margin-top-lg">
+        <div class="tabla-header">
+            <h3>Registro Histórico de Auditoría Logística (Log_Sincronizacion)</h3>
+        </div>
+        <div class="responsive-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha y Hora</th>
+                        <th>Nodo Destino</th>
+                        <th>Operación Aplicada</th>
+                        <th>Filas Afectadas</th>
+                        <th>Estado Final</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaLogs">
+                    <tr class="placeholder-row"><td colspan="5">Cargando logs de auditoría...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</section>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Aduanero Distribuido - Nodo Coordinador</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/coordinador.css') }}">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo">
+            <h2>Nodo Coordinador</h2>
+            <span class="subtitulo">Control Aduanero Global</span>
+        </div>
+
+        <nav class="menu-navegacion">
+            <div class="sidebar-categoria">Panel Operativo</div>
+            
+            <a href="#dashboard" class="nav-link active" data-target="dashboard">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                </span> 
+                Dashboard
+            </a>
+            
+            <a href="#encomiendas" class="nav-link" data-target="encomiendas">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                </span> 
+                Encomiendas
+            </a>
+            
+            <a href="#clientes" class="nav-link" data-target="clientes">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                </span> 
+                Clientes
+            </a>
+            
+            <a href="#movimientos" class="nav-link" data-target="movimientos">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                </span> 
+                Movimientos
+            </a>
+            
+            <a href="#seguimiento" class="nav-link" data-target="seguimiento">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 12 12s12-6.75 12-12a8 8 0 0 0-8-8z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                </span> 
+                Seguimiento
+            </a>
+            
+            <a href="#reportes" class="nav-link" data-target="reportes">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                </span> 
+                Reportes
+            </a>
+
+            <div class="sidebar-categoria">Bases de Datos Distribuidas</div>
+            
+            <a href="#consultas" class="nav-link" data-target="consultas">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </span> 
+                Consultas Distribuidas
+            </a>
+            
+            <a href="#catalogo" class="nav-link" data-target="catalogo">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                </span> 
+                Catálogo Fragmentación
+            </a>
+            
+            <a href="#sincronizacion" class="nav-link" data-target="sincronizacion">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                </span> 
+                Sincronización
+            </a>
+            
+            <a href="#transacciones" class="nav-link" data-target="transacciones">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                </span> 
+                Transacciones 2PC
+            </a>
+            
+            <a href="#monitoreo" class="nav-link" data-target="monitoreo">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                </span> 
+                Monitoreo de Nodos
+            </a>
+
+            <div class="sidebar-categoria">Sistema</div>
+            <a href="#acerca" class="nav-link" data-target="acerca">
+                <span class="icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                </span> 
+                Acerca del Sistema
+            </a>
+        </nav>
+                
+        <div class="sidebar-footer">
+            <p>Estado Central: <span class="badge-status success">ONLINE</span></p>
+        </div>
+    </aside>
+
+    <main class="contenido-principal">
+        
+        <header class="topbar">
+            <div class="titulo-pagina">
+                <h1 id="topbar-titulo">Dashboard</h1>
+            </div>
+            <div class="info-sistema">
+                <span class="badge-nodo">COORDINADOR_CENTRAL</span>
+                <span id="live-clock" class="reloj">--:--:--</span>
+            </div>
+        </header>
+
+        <div class="vistas-contenedor">
+            {% include 'coordinador/dashboard.html' %}
+            {% include 'coordinador/encomiendas.html' %}
+            {% include 'coordinador/clientes.html' %}
+            {% include 'coordinador/movimientos.html' %}
+            {% include 'coordinador/seguimiento.html' %}
+            {% include 'coordinador/reportes.html' %}
+
+            {% include 'coordinador/consultas.html' %}
+            {% include 'coordinador/catalogo.html' %}
+            {% include 'coordinador/sincronizacion.html' %}
+            {% include 'coordinador/transacciones.html' %}
+            {% include 'coordinador/monitoreo.html' %}
+            
+            {% include 'coordinador/acerca.html' %}
+        </div>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/encomiendas.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/clientes.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/movimientos.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/seguimiento.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reportes.js') }}"></script>
+    
+    <script src="{{ url_for('static', filename='js/consultas.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/catalogo.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/sincronizacion.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/transacciones.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/monitoreo.js') }}"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const links = document.querySelectorAll(".nav-link");
+            const sections = document.querySelectorAll(".vistas-contenedor > section");
+            const tituloTopbar = document.getElementById("topbar-titulo");
+
+            links.forEach(link => {
+                link.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute("data-target");
+
+                    links.forEach(l => l.classList.remove("active"));
+                    this.classList.add("active");
+
+                    sections.forEach(sec => {
+                        if(sec.id === targetId) {
+                            sec.classList.add("section-active");
+                            // Limpieza elegante de emojis para el título superior
+                            tituloTopbar.textContent = this.textContent.replace(/[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD00-\uDFFF]/g, '').trim();
+                        } else {
+                            sec.classList.remove("section-active");
+                        }
+                    });
+                });
+            });
+
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('live-clock').textContent = now.toLocaleTimeString('es-BO');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
