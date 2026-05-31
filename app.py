@@ -96,15 +96,37 @@ def metricas():
 
 @app.route('/dashboard')
 def dashboard():
-
     return jsonify(
         construir_dashboard()
     )
 
+# ------------------------------------------------------------------
+# RUTA CONTROLADORA UNIFICADA PARA SEDES REGIONALES (Dinamismo de UI)
+# ------------------------------------------------------------------
+@app.route('/nodo/<ciudad>')
+def inicio_nodo_regional(ciudad):
+    token = ciudad.lower().strip().replace('-', '_')
+    
+    if token in ['la_paz', 'lapaz']:
+        config_nodo = {
+            "id": "NODO_LA_PAZ",
+            "nombre": "Sede Occidental (La Paz)",
+            "motor": "PostgreSQL Instance (Port 5432)"
+        }
+    elif token in ['santa_cruz', 'santacruz']:
+        config_nodo = {
+            "id": "NODO_SANTA_CRUZ",
+            "nombre": "Sede Oriental (Santa Cruz)",
+            "motor": "SQL Server Instance (Port 1433)"
+        }
+    else:
+        return "Sede Regional no autorizada", 404
+        
+    return render_template('nodo_regional/index.html', nodo=config_nodo)
+
 # -----------------------------------
 
 if __name__ == '__main__':
-
     app.run(
         host='0.0.0.0',
         port=5000,

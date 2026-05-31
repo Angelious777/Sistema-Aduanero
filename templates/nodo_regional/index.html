@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sede Regional | Sistema de Control Aduanero</title>
+    <link rel="stylesheet" href="/static/css/coordinador.css">
+    <link rel="stylesheet" href="/static/css/nodo_regional.css">
+    
+    <script>
+        window.CONFIG_NODO_ACTIVO = {
+            id: "{{ nodo.id }}",
+            nombre: "{{ nodo.nombre }}",
+            motor: "{{ nodo.motor }}"
+        };
+    </script>
+</head>
+<body>
+    <div class="layout-contenedor">
+        
+        <aside class="sidebar-panel">
+            <div class="logo" style="display: flex; align-items: center; gap: 12px;">
+                <div class="brand-avatar" style="
+                    width: 36px; 
+                    height: 36px; 
+                    background-color: var(--azul-claro); 
+                    color: var(--azul-primario); 
+                    border-radius: 6px; 
+                    display: flex; 
+                    align-items: center; 
+                    justify-content: center; 
+                    font-weight: 700; 
+                    font-size: 0.9rem;
+                    border: 1px solid var(--borde);
+                    flex-shrink: 0;
+                ">SR</div>
+                
+                <div>
+                    <h2 id="lbl-sidebar-nodo" style="margin: 0;">{{ nodo.id }}</h2>
+                    <span class="subtitulo">Punto Operativo Local</span>
+                </div>
+            </div>
+            
+            <nav class="menu-navegacion">
+                <div class="sidebar-categoria">Operaciones de Terminal</div>
+                
+                <a href="#dashboard" class="nav-link active" data-target="dashboard">
+                    <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg></span> 
+                    Dashboard
+                </a>
+                
+                <a href="#paquetes" class="nav-link" data-target="paquetes">
+                    <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg></span> 
+                    Paquetes
+                </a>
+                
+                <a href="#movimientos" class="nav-link" data-target="movimientos">
+                    <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg></span> 
+                    Movimientos
+                </a>
+
+                <div class="sidebar-categoria">Catálogos & Clientes</div>
+                
+                <a href="#clientes" class="nav-link" data-target="clientes">
+                    <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span> 
+                    Clientes
+                </a>
+                
+                <a href="#almacenes" class="nav-link" data-target="almacenes">
+                    <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></span> 
+                    Almacenes
+                </a>
+
+                <div class="sidebar-categoria">Infraestructura</div>
+                
+                <a href="#info-nodo" class="nav-link" data-target="info-nodo">
+                    <span class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span> 
+                    Información Nodo
+                </a>
+            </nav>
+        </aside>
+
+        <main class="contenido-principal">
+            <header class="topbar-panel">
+                <h1 id="titulo-topbar-modulo">Dashboard</h1>
+                <div class="usuario-badge">
+                    <span class="status-indicator online">●</span>
+                    <span>Operador Local: <strong id="lbl-nombre-nodo">{{ nodo.nombre }}</strong></span>
+                </div>
+            </header>
+
+            <div class="contenedor-vistas-dinamicas">
+                {% include 'nodo_regional/dashboard.html' %}
+                {% include 'nodo_regional/paquetes.html' %}
+                {% include 'nodo_regional/movimientos.html' %}
+                {% include 'nodo_regional/clientes.html' %}
+                {% include 'nodo_regional/almacenes.html' %}
+                {% include 'nodo_regional/info_nodo.html' %}
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/db_local_nodo.js"></script>
+    <script src="/static/js/dashboard_nodo.js"></script>
+    <script src="/static/js/paquetes_nodo.js"></script>
+    <script src="/static/js/movimientos_nodo.js"></script>
+    <script src="/static/js/clientes_nodo.js"></script>
+    <script src="/static/js/almacenes_nodo.js"></script>
+    <script src="/static/js/nodo_info.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const links = document.querySelectorAll(".menu-navegacion .nav-link");
+            const sections = document.querySelectorAll(".contenedor-vistas-dinamicas > section");
+            const topbarTitulo = document.getElementById("titulo-topbar-modulo");
+
+            function cambiarVista(targetId) {
+                sections.forEach(sec => {
+                    if(sec.id === targetId) {
+                        sec.classList.add("section-active");
+                    } else {
+                        sec.classList.remove("section-active");
+                    }
+                });
+            }
+
+            links.forEach(link => {
+                link.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute("data-target");
+
+                    links.forEach(l => l.classList.remove("active"));
+                    this.classList.add("active");
+
+                    cambiarVista(targetId);
+                    topbarTitulo.textContent = this.textContent.trim();
+                });
+            });
+            
+            cambiarVista("dashboard");
+        });
+    </script>
+</body>
+</html>
