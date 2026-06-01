@@ -1,6 +1,3 @@
-# SCRIPT — NODO SANTA CRUZ (SQL Server)
-
-```sql
 CREATE DATABASE nodo_scz;
 GO
 
@@ -8,21 +5,27 @@ USE nodo_scz;
 GO
 
 -- =========================================================
--- TABLA: CLIENTE_PUBLICO
+-- TABLA: cliente_publico
 -- =========================================================
 
 CREATE TABLE cliente_publico (
-    id_cliente INT IDENTITY(1,1) PRIMARY KEY,
+    id_cliente UNIQUEIDENTIFIER PRIMARY KEY,
+
     nombre VARCHAR(100) NOT NULL,
-    telefono VARCHAR(20)
+    apellido_paterno VARCHAR(100) NOT NULL,
+    apellido_materno VARCHAR(100),
+
+    telefono VARCHAR(20),
+
+    fecha_registro DATETIME NOT NULL DEFAULT GETDATE()
 );
 
 -- =========================================================
--- TABLA: ALMACEN
+-- TABLA: almacen
 -- =========================================================
 
 CREATE TABLE almacen (
-    id_almacen INT IDENTITY(1,1) PRIMARY KEY,
+    id_almacen INT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     ciudad VARCHAR(50) NOT NULL,
     direccion VARCHAR(200),
@@ -30,121 +33,162 @@ CREATE TABLE almacen (
 );
 
 -- =========================================================
--- TABLA: ESTADO (REPLICA)
+-- TABLA: estado
 -- =========================================================
 
 CREATE TABLE estado (
-    id_estado INT IDENTITY(1,1) PRIMARY KEY,
+    id_estado INT PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL UNIQUE
 );
 
 -- =========================================================
--- TABLA: RUTA (REPLICA)
+-- TABLA: ruta
 -- =========================================================
 
 CREATE TABLE ruta (
-    id_ruta INT IDENTITY(1,1) PRIMARY KEY,
-    origen VARCHAR(50) NOT NULL,
-    destino VARCHAR(50) NOT NULL,
-    descripcion TEXT
+    id_ruta INT PRIMARY KEY,
+
+    id_almacen_origen INT NOT NULL,
+
+    id_almacen_destino INT NOT NULL,
+
+    descripcion VARCHAR(300),
+
+    CONSTRAINT fk_ruta_origen
+        FOREIGN KEY (id_almacen_origen)
+        REFERENCES almacen(id_almacen),
+
+    CONSTRAINT fk_ruta_destino
+        FOREIGN KEY (id_almacen_destino)
+        REFERENCES almacen(id_almacen),
+
+    CONSTRAINT uq_ruta
+        UNIQUE(id_almacen_origen, id_almacen_destino)
 );
 
 -- =========================================================
--- TABLA: PAQUETE_OPERATIVO_SCZ
+-- TABLA: paquete_operativo_scz
 -- =========================================================
 
 CREATE TABLE paquete_operativo_scz (
-    id_paquete INT IDENTITY(1,1) PRIMARY KEY,
-    codigo_rastreo VARCHAR(50) UNIQUE NOT NULL,
+    id_paquete UNIQUEIDENTIFIER PRIMARY KEY,
 
-    id_cliente_remitente INT NOT NULL,
-    id_cliente_destinatario INT NOT NULL,
+    codigo_rastreo VARCHAR(30) NOT NULL UNIQUE,
+
+    id_cliente_remitente UNIQUEIDENTIFIER NOT NULL,
+
+    id_cliente_destinatario UNIQUEIDENTIFIER NOT NULL,
+
+    id_estado INT NOT NULL,
+
+    id_ruta INT NOT NULL,
+
+    id_almacen_actual INT NOT NULL,
 
     peso DECIMAL(10,2),
+
     volumen DECIMAL(10,2),
+
+    descripcion VARCHAR(300),
+
     prioridad VARCHAR(20),
 
-    id_estado_actual INT,
-    id_ruta INT,
+    fecha_registro DATETIME NOT NULL DEFAULT GETDATE(),
 
-    id_almacen_origen INT,
-    id_almacen_destino INT,
-    id_almacen_actual INT,
-
-    fecha_registro DATETIME DEFAULT GETDATE(),
-
-    nodo_origen VARCHAR(20) DEFAULT 'SCZ',
-
-    FOREIGN KEY (id_cliente_remitente)
+    CONSTRAINT fk_pos_remitente
+        FOREIGN KEY (id_cliente_remitente)
         REFERENCES cliente_publico(id_cliente),
 
-    FOREIGN KEY (id_cliente_destinatario)
+    CONSTRAINT fk_pos_destinatario
+        FOREIGN KEY (id_cliente_destinatario)
         REFERENCES cliente_publico(id_cliente),
 
-    FOREIGN KEY (id_estado_actual)
+    CONSTRAINT fk_pos_estado
+        FOREIGN KEY (id_estado)
         REFERENCES estado(id_estado),
 
-    FOREIGN KEY (id_ruta)
+    CONSTRAINT fk_pos_ruta
+        FOREIGN KEY (id_ruta)
         REFERENCES ruta(id_ruta),
 
-    FOREIGN KEY (id_almacen_origen)
-        REFERENCES almacen(id_almacen),
-
-    FOREIGN KEY (id_almacen_destino)
-        REFERENCES almacen(id_almacen),
-
-    FOREIGN KEY (id_almacen_actual)
+    CONSTRAINT fk_pos_almacen
+        FOREIGN KEY (id_almacen_actual)
         REFERENCES almacen(id_almacen)
 );
 
 -- =========================================================
--- TABLA: PAQUETE_FINANCIERO_SCZ
+-- TABLA: paquete_financiero_scz
 -- =========================================================
 
 CREATE TABLE paquete_financiero_scz (
-    id_paquete INT PRIMARY KEY,
+    id_paquete UNIQUEIDENTIFIER PRIMARY KEY,
 
     valor_declarado DECIMAL(12,2),
-    costo_envio DECIMAL(12,2),
+
     seguro DECIMAL(12,2),
 
-    FOREIGN KEY (id_paquete)
+    costo_envio DECIMAL(12,2),
+
+    CONSTRAINT fk_pfs_operativo
+        FOREIGN KEY (id_paquete)
         REFERENCES paquete_operativo_scz(id_paquete)
 );
 
 -- =========================================================
--- TABLA: MOVIMIENTO_SCZ
+-- TABLA: movimiento_scz
 -- =========================================================
 
 CREATE TABLE movimiento_scz (
-    id_movimiento INT IDENTITY(1,1) PRIMARY KEY,
+    id_movimiento UNIQUEIDENTIFIER PRIMARY KEY,
 
-    id_paquete INT NOT NULL,
+    id_paquete UNIQUEIDENTIFIER NOT NULL,
 
-    descripcion VARCHAR(200) NOT NULL,
-    ubicacion VARCHAR(100),
+    id_almacen INT NOT NULL,
 
-    fecha_movimiento DATETIME DEFAULT GETDATE(),
+    fecha_movimiento DATETIME NOT NULL DEFAULT GETDATE(),
 
-    nodo_responsable VARCHAR(20) DEFAULT 'SCZ',
+    observacion VARCHAR(300),
 
-    FOREIGN KEY (id_paquete)
-        REFERENCES paquete_operativo_scz(id_paquete)
+    CONSTRAINT fk_mscz_paquete
+        FOREIGN KEY (id_paquete)
+        REFERENCES paquete_operativo_scz(id_paquete),
+
+    CONSTRAINT fk_mscz_almacen
+        FOREIGN KEY (id_almacen)
+        REFERENCES almacen(id_almacen)
+);
+
+-- =========================================================
+-- TABLA: cola_pendientes
+-- =========================================================
+
+CREATE TABLE cola_pendientes (
+    id_pendiente INT IDENTITY(1,1) PRIMARY KEY,
+
+    nodo_origen VARCHAR(20),
+
+    operacion VARCHAR(50),
+    tabla_afectada VARCHAR(50),
+
+    id_registro VARCHAR(50),
+
+    fecha_registro DATETIME DEFAULT GETDATE(),
+
+    estado VARCHAR(30)
 );
 
 -- =========================================================
 -- DATOS BASE
 -- =========================================================
 
-INSERT INTO estado(nombre) VALUES
-('Registrado'),
-('En almacén'),
-('En tránsito'),
-('Llegó a destino'),
-('Entregado');
+INSERT INTO estado(id_estado, nombre) VALUES
+(1, 'Registrado'),
+(2, 'En almacén'),
+(3, 'En tránsito'),
+(4, 'Llegó a destino'),
+(5, 'Entregado');
 
-INSERT INTO almacen(nombre, ciudad, direccion, nodo_responsable)
+INSERT INTO almacen(id_almacen, nombre, ciudad, direccion, nodo_responsable)
 VALUES
-('Almacén Central SCZ', 'Santa Cruz', 'Zona Industrial', 'SCZ');
+(2, 'Almacén Central SCZ', 'Santa Cruz', 'Zona Industrial', 'SCZ');
 GO
-```
