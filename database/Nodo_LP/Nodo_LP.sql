@@ -25,7 +25,7 @@ CREATE TABLE CLIENTE_PUBLICO (
 -- =========================================================
 
 CREATE TABLE almacen (
-    id_almacen PRIMARY KEY,
+    id_almacen INT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     ciudad VARCHAR(50) NOT NULL,
     direccion VARCHAR(200),
@@ -37,7 +37,7 @@ CREATE TABLE almacen (
 -- =========================================================
 
 CREATE TABLE estado (
-    id_estado SERIAL PRIMARY KEY,
+    id_estado INT PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL UNIQUE
 );
 
@@ -46,7 +46,7 @@ CREATE TABLE estado (
 -- =========================================================
 
 CREATE TABLE ruta (
-    id_ruta PRIMARY KEY,
+    id_ruta INT PRIMARY KEY,
 
     id_almacen_origen INT NOT NULL,
 
@@ -163,7 +163,7 @@ CREATE TABLE MOVIMIENTO_LP (
 -- =========================================================
 
 CREATE TABLE cola_pendientes (
-    id_pendiente INT IDENTITY(1,1) PRIMARY KEY,
+    id_pendiente SERIAL PRIMARY KEY,
 
     nodo_origen VARCHAR(20),
 
@@ -172,7 +172,7 @@ CREATE TABLE cola_pendientes (
 
     id_registro VARCHAR(50),
 
-    fecha_registro DATETIME DEFAULT GETDATE(),
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     estado VARCHAR(30)
 );

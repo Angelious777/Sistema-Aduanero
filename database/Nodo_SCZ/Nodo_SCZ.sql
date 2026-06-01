@@ -39,7 +39,7 @@ CREATE TABLE almacen (
 -- =========================================================
 
 CREATE TABLE estado (
-    id_estado INT IDENTITY(1,1) PRIMARY KEY,
+    id_estado INT PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL UNIQUE
 );
 
@@ -48,7 +48,7 @@ CREATE TABLE estado (
 -- =========================================================
 
 CREATE TABLE ruta (
-    id_ruta PRIMARY KEY,
+    id_ruta INT PRIMARY KEY,
 
     id_almacen_origen INT NOT NULL,
 
