@@ -72,29 +72,41 @@ def obtener_paquetes_por_nodo(nodo):
 
 def crear_paquete(codigo, destino, prioridad, nodo, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio):
     id_paquete = str(uuid.uuid4())
+    nodo_origen = str(nodo).strip().lower()
     
     try:
-        # 1. NODO CENTRAL: Ahora le pasamos TODOS los parámetros para poblar el esquema global
+        # =========================================================
+        # 1. NODO CENTRAL: Registro Maestro Global (SQL Server)
+        # =========================================================
         insertar_en_central(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
             
-        # 2. NODO ORIGEN: Registro completo (Operativo + Financiero)
-        if nodo.lower() in ['lapaz', 'la_paz', 'lp']:
+        # =========================================================
+        # 2. NODO ORIGEN: Registro Completo (Operativo + Financiero)
+        # =========================================================
+        if nodo_origen in ['lapaz', 'la_paz', 'lp']:
             insertar_en_lp(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
-        else:
+        elif nodo_origen in ['santacruz', 'santa_cruz', 'scz']:
             insertar_en_scz(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
+        else:
+            raise ValueError(f"Nodo de origen '{nodo_origen}' no reconocido por el backend.")
             
-        # 3. NODO DESTINO: Replicación Parcial (Solo Operativo)
-        es_origen_lp = nodo.lower() in ['lapaz', 'la_paz', 'lp']
-        
-        if int(destino) == 1 and not es_origen_lp:
+        # =========================================================
+        # 3. NODO DESTINO: Replicación Cruzada Parcial (Solo Operativo)
+        # =========================================================
+        # REGLA INVERSA DIRECTA: Si no se originó en LP, obliga a dejar copia operativa en LP.
+        if nodo_origen not in ['lapaz', 'la_paz', 'lp']:
+            registrar_log(f"Iniciando replicación cruzada desde SCZ hacia el fragmento operativo de La Paz para el paquete {codigo}")
             insertar_operativo_lp_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen)
-        elif int(destino) == 2 and es_origen_lp:
+            
+        # REGLA INVERSA DIRECTA: Si se originó en LP, obliga a dejar copia operativa en SCZ.
+        else:
+            registrar_log(f"Iniciando replicación cruzada desde LP hacia el fragmento operativo de Santa Cruz para el paquete {codigo}")
             insertar_operativo_scz_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen)
                 
         return True
 
     except Exception as e:
-        registrar_log(f"FALLO EN TRANSACCIÓN DISTRIBUIDA: {str(e)}")
+        registrar_log(f"FALLO EN TRANSACCIÓN DISTRIBUIDA DE PAQUETES: {str(e)}")
         raise e
 
 
