@@ -569,8 +569,8 @@ def api_listar_movimientos_locales(nodo):
             # 🟢 POSTGRESQL - Fragmento movimiento_lp
             query_sql = """
                 SELECT m.id_movimiento, m.id_paquete, a.nombre as nombre_almacen, m.fecha_movimiento, m.observacion 
-                FROM movimiento_lp m
-                JOIN almacen a ON m.id_almacen = a.id_almacen
+                FROM "movimiento_lp" m
+                JOIN "almacen" a ON m.id_almacen = a.id_almacen
                 ORDER BY m.fecha_movimiento DESC
             """
             try:
