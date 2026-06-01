@@ -276,4 +276,73 @@ def obtener_tabla_paquete_financiero(nodo):
         return datos
     except Exception as e:
         print(f"Error obteniendo tabla PAQUETE_FINANCIERO de {nodo}:", e)
-        return []
+
+
+
+
+
+def obtener_paquetes_por_tipo_nodo(nodo):
+    """Obtiene paquetes operativos y financieros de un nodo específico"""
+    resultado = {
+        "operativos": [],
+        "financieros": []
+    }
+
+    try:
+        if nodo.lower() in ['lapaz', 'la_paz']:
+            # La Paz
+            conn = conectar_lp()
+            cur = conn.cursor()
+
+            # Operativos
+            try:
+                cur.execute("SELECT * FROM paquete_lp")
+                columnas = [desc[0] for desc in cur.description]
+                resultado["operativos"] = [dict(zip(columnas, fila)) for fila in cur.fetchall()]
+            except Exception as e:
+                print(f"Error obteniendo paquetes operativos de La Paz: {e}")
+
+            # Financieros (si existen)
+            try:
+                cur.execute("SELECT * FROM paquete_financiero_lp")
+                columnas = [desc[0] for desc in cur.description]
+                resultado["financieros"] = [dict(zip(columnas, fila)) for fila in cur.fetchall()]
+            except Exception:
+                pass
+
+            cur.close()
+            conn.close()
+
+        else:
+            # Santa Cruz
+            conn = conectar_scz()
+            cur = conn.cursor()
+
+            # Operativos
+            try:
+                cur.execute("SELECT * FROM paquete_operativo_scz")
+                columnas = [desc[0] for desc in cur.description]
+                resultado["operativos"] = [dict(zip(columnas, fila)) for fila in cur.fetchall()]
+            except Exception:
+                try:
+                    cur.execute("SELECT * FROM paquete_scz")
+                    columnas = [desc[0] for desc in cur.description]
+                    resultado["operativos"] = [dict(zip(columnas, fila)) for fila in cur.fetchall()]
+                except Exception as e:
+                    print(f"Error obteniendo paquetes operativos de Santa Cruz: {e}")
+
+            # Financieros
+            try:
+                cur.execute("SELECT * FROM paquete_financiero_scz")
+                columnas = [desc[0] for desc in cur.description]
+                resultado["financieros"] = [dict(zip(columnas, fila)) for fila in cur.fetchall()]
+            except Exception as e:
+                print(f"Error obteniendo paquetes financieros de Santa Cruz: {e}")
+
+            cur.close()
+            conn.close()
+
+    except Exception as e:
+        print(f"Error general en obtener_paquetes_por_tipo_nodo: {e}")
+
+    return resultado

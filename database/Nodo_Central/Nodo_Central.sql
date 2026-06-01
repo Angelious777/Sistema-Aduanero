@@ -247,3 +247,89 @@ VALUES
 (1,'Almacén Central LP', 'La Paz', 'Zona Central', 'LP'),
 (2,'Almacén Central SCZ', 'Santa Cruz', 'Zona Industrial', 'SCZ');
 GO
+
+
+INSERT INTO catalogo_fragmentacion
+(nombre_fragmento, nodo, motor_bd, tabla_base, tipo_fragmentacion)
+VALUES
+
+-- ==========================================
+-- CLIENTE (fragmentación vertical)
+-- ==========================================
+
+('CLIENTE_PUBLICO_LP',      'LP',      'PostgreSQL', 'CLIENTE', 'Vertical'),
+('CLIENTE_PUBLICO_SCZ',     'SCZ',     'SQL Server', 'CLIENTE', 'Vertical'),
+('CLIENTE_PUBLICO_CENTRAL', 'CENTRAL', 'SQL Server', 'CLIENTE', 'Vertical'),
+
+('CLIENTE_PRIVADO_CENTRAL', 'CENTRAL', 'SQL Server', 'CLIENTE', 'Vertical'),
+
+-- ==========================================
+-- PAQUETE (fragmentación hibrida)
+-- ==========================================
+
+('PAQUETE_OPERATIVO_LP',  'LP',      'PostgreSQL', 'PAQUETE', 'Hibrida'),
+('PAQUETE_FINANCIERO_LP', 'LP',      'PostgreSQL', 'PAQUETE', 'Hibrida'),
+
+('PAQUETE_OPERATIVO_SCZ',  'SCZ',     'SQL Server', 'PAQUETE', 'Hibrida'),
+('PAQUETE_FINANCIERO_SCZ', 'SCZ',     'SQL Server', 'PAQUETE', 'Hibrida'),
+
+('PAQUETE_GLOBAL', 'CENTRAL', 'SQL Server', 'PAQUETE', 'Integración'),
+
+-- ==========================================
+-- MOVIMIENTO (fragmentación horizontal)
+-- ==========================================
+
+('MOVIMIENTO_LP',  'LP',  'PostgreSQL', 'MOVIMIENTO', 'Horizontal'),
+('MOVIMIENTO_SCZ', 'SCZ', 'SQL Server', 'MOVIMIENTO', 'Horizontal'),
+
+('MOVIMIENTO_GLOBAL', 'CENTRAL', 'SQL Server', 'MOVIMIENTO', 'Integración'),
+
+-- ==========================================
+-- TABLAS REPLICADAS
+-- ==========================================
+
+('ESTADO_LP',      'LP',      'PostgreSQL', 'ESTADO', 'Replicada'),
+('ESTADO_SCZ',     'SCZ',     'SQL Server', 'ESTADO', 'Replicada'),
+('ESTADO_CENTRAL', 'CENTRAL', 'SQL Server', 'ESTADO', 'Replicada'),
+
+('ALMACEN_LP',      'LP',      'PostgreSQL', 'ALMACEN', 'Replicada'),
+('ALMACEN_SCZ',     'SCZ',     'SQL Server', 'ALMACEN', 'Replicada'),
+('ALMACEN_CENTRAL', 'CENTRAL', 'SQL Server', 'ALMACEN', 'Replicada'),
+
+('RUTA_LP',      'LP',      'PostgreSQL', 'RUTA', 'Replicada'),
+('RUTA_SCZ',     'SCZ',     'SQL Server', 'RUTA', 'Replicada'),
+('RUTA_CENTRAL', 'CENTRAL', 'SQL Server', 'RUTA', 'Replicada');
+
+
+
+-- 1. Insert en CLIENTE_PUBLICO
+DECLARE @id UNIQUEIDENTIFIER = NEWID();
+
+INSERT INTO CLIENTE_PUBLICO (
+    id_cliente,
+    nombre,
+    apellido_paterno,
+    apellido_materno,
+    telefono
+)
+VALUES (
+    @id,
+    'Juan',
+    'Perez',
+    'Lopez',
+    '71234567'
+);
+
+-- 2. Insert en CLIENTE_PRIVADO usando el mismo ID
+INSERT INTO CLIENTE_PRIVADO (
+    id_cliente,
+    documento_identidad,
+    direccion,
+    email
+)
+VALUES (
+    @id,
+    '1234567LP',
+    'Zona Sopocachi, La Paz',
+    'juan.perez@email.com'
+);

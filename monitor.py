@@ -14,47 +14,27 @@ def obtener_estado_nodos():
     try:
         conn = conectar_lp()
         conn.close()
-        estado_nodos['La Paz'] = 'Conectado'
+        estado_nodos['La Paz'] = True
     except:
-        estado_nodos['La Paz'] = 'Desconectado'
+        estado_nodos['La Paz'] = False
     
     # Santa Cruz - SQL Server
     try:
         conn = conectar_scz()
         conn.close()
-        estado_nodos['Santa Cruz'] = 'Conectado'
+        estado_nodos['Santa Cruz'] = True
     except:
-        estado_nodos['Santa Cruz'] = 'Desconectado'
+        estado_nodos['Santa Cruz'] = False
     
     # Coordinador - SQL Server
     try:
         conn = conectar_central()
         conn.close()
-        estado_nodos['Coordinador'] = 'Conectado'
+        estado_nodos['Coordinador'] = True
     except:
-        estado_nodos['Coordinador'] = 'Desconectado'
+        estado_nodos['Coordinador'] = False
     
     return estado_nodos
-
-
-def obtener_nodos():
-    """Obtiene información de nodos desde la BD central"""
-    try:
-        conn = conectar_central()
-        cur = conn.cursor()
-        
-        cur.execute("""
-            SELECT nombre, estado
-            FROM nodos
-        """)
-        datos = cur.fetchall()
-        cur.close()
-        conn.close()
-        
-        return datos
-    except Exception as e:
-        print("Error obteniendo nodos:", e)
-        return []
 
 
 def obtener_metricas_nodo(nodo):

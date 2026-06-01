@@ -7,6 +7,86 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 function listarPaquetesLocales() {
+async function cargarPaquetesPorTipo() {
+    const nodoId = window.CONFIG_NODO_ACTIVO.id;
+    const nodoNombre = window.CONFIG_NODO_ACTIVO.nombre;
+
+    try {
+        const response = await fetch(`/api/paquetes/por-tipo/${nodoId}`);
+        const resultado = await response.json();
+
+        if (!response.ok || resultado.success === false) {
+            console.error("Error al cargar paquetes:", resultado.error);
+            return;
+        }
+
+        window.PAQUETES_NODO = resultado.data || { operativos: [], financieros: [] };
+        mostrarPaquetesOperativos();
+        mostrarPaquetesFinancieros();
+    } catch (error) {
+        console.error("Error en cargarPaquetesPorTipo:", error);
+    }
+}
+
+function mostrarPaquetesOperativos() {
+    const tbody = document.getElementById("tabla-paquetes-operativos-body");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+    const paquetes = (window.PAQUETES_NODO && window.PAQUETES_NODO.operativos) || [];
+
+    if (paquetes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5">No hay paquetes operativos registrados.</td></tr>`;
+        return;
+    }
+
+    paquetes.forEach(pkt => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td style="font-family: monospace; font-weight: bold;">${pkt.codigo_rastreo || pkt.codigo || '--'}</td>
+            <td>${pkt.destino || '--'}</td>
+            <td>${pkt.estado || '--'}</td>
+            <td>${(pkt.prioridad || pkt.peso || '--')}</td>
+            <td style="text-align: center;">
+                <button class="btn-secundario" style="padding: 4px 10px; font-size: 0.8rem;" onclick="alert('Detalle: ${JSON.stringify(pkt).replace(/'/g, "\\'")}')">Ver</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function mostrarPaquetesFinancieros() {
+    const tbody = document.getElementById("tabla-paquetes-financieros-body");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+    const paquetes = (window.PAQUETES_NODO && window.PAQUETES_NODO.financieros) || [];
+
+    if (paquetes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5">No hay paquetes financieros registrados.</td></tr>`;
+        return;
+    }
+
+    paquetes.forEach(pkt => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td style="font-family: monospace; font-weight: bold;">${pkt.codigo_rastreo || pkt.id_paquete || '--'}</td>
+            <td>${(pkt.costo || 0).toFixed(2)} Bs</td>
+            <td>${(pkt.seguro || 0).toFixed(2)} Bs</td>
+            <td>${(pkt.impuesto || 0).toFixed(2)} Bs</td>
+            <td style="text-align: center;">
+                <button class="btn-secundario" style="padding: 4px 10px; font-size: 0.8rem;" onclick="alert('Detalle: ${JSON.stringify(pkt).replace(/'/g, "\\'")}')">Ver</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    cargarPaquetesPorTipo();
+});
+
+function listarPaquetesLocales() {
     const tbody = document.getElementById("tabla-paquetes-local-body");
     if (!tbody) return;
 

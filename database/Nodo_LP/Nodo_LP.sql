@@ -9,7 +9,7 @@ CREATE DATABASE nodo_lp;
 -- TABLA: CLIENTE_PUBLICO
 -- =========================================================
 
-CREATE TABLE CLIENTE_PUBLICO (
+CREATE TABLE cliente_publico (
     id_cliente UUID PRIMARY KEY,
 
     nombre VARCHAR(100) NOT NULL,
@@ -70,7 +70,7 @@ CREATE TABLE ruta (
 -- TABLA: PAQUETE_OPERATIVO_LP
 -- =========================================================
 
-CREATE TABLE PAQUETE_OPERATIVO_LP (
+CREATE TABLE paquete_operativo_lp (
     id_paquete UUID PRIMARY KEY,
 
     codigo_rastreo VARCHAR(30) NOT NULL UNIQUE,
@@ -97,30 +97,30 @@ CREATE TABLE PAQUETE_OPERATIVO_LP (
 
     CONSTRAINT FK_POP_REMITENTE
         FOREIGN KEY (id_cliente_remitente)
-        REFERENCES CLIENTE_PUBLICO(id_cliente),
+        REFERENCES cliente_publico(id_cliente),
 
     CONSTRAINT FK_POP_DESTINATARIO
         FOREIGN KEY (id_cliente_destinatario)
-        REFERENCES CLIENTE_PUBLICO(id_cliente),
+        REFERENCES cliente_publico(id_cliente),
 
     CONSTRAINT FK_POP_ESTADO
         FOREIGN KEY (id_estado)
-        REFERENCES ESTADO(id_estado),
+        REFERENCES estado(id_estado),
 
     CONSTRAINT FK_POP_RUTA
         FOREIGN KEY (id_ruta)
-        REFERENCES RUTA(id_ruta),
+        REFERENCES ruta(id_ruta),
 
     CONSTRAINT FK_POP_ALMACEN
         FOREIGN KEY (id_almacen_actual)
-        REFERENCES ALMACEN(id_almacen)
+        REFERENCES almacen(id_almacen)
 );
 
 -- =========================================================
 -- TABLA: PAQUETE_FINANCIERO_LP
 -- =========================================================
 
-CREATE TABLE PAQUETE_FINANCIERO_LP (
+CREATE TABLE paquete_financiero_lp (
     id_paquete UUID PRIMARY KEY,
 
     valor_declarado NUMERIC(12,2),
@@ -131,14 +131,14 @@ CREATE TABLE PAQUETE_FINANCIERO_LP (
 
     CONSTRAINT FK_PFP_OPERATIVO
         FOREIGN KEY (id_paquete)
-        REFERENCES PAQUETE_OPERATIVO_LP(id_paquete)
+        REFERENCES paquete_operativo_lp(id_paquete)
 );
 
 -- =========================================================
 -- TABLA: MOVIMIENTO_LP
 -- =========================================================
 
-CREATE TABLE MOVIMIENTO_LP (
+CREATE TABLE movimiento_lp (
     id_movimiento UUID PRIMARY KEY,
 
     id_paquete UUID NOT NULL,
@@ -151,11 +151,11 @@ CREATE TABLE MOVIMIENTO_LP (
 
     CONSTRAINT FK_MLP_PAQUETE
         FOREIGN KEY (id_paquete)
-        REFERENCES PAQUETE_OPERATIVO_LP(id_paquete),
+        REFERENCES paquete_operativo_lp(id_paquete),
 
     CONSTRAINT FK_MLP_ALMACEN
         FOREIGN KEY (id_almacen)
-        REFERENCES ALMACEN(id_almacen)
+        REFERENCES almacen(id_almacen)
 );
 
 -- =========================================================

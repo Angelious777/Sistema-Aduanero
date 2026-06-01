@@ -3,21 +3,43 @@
         <strong>Control Logístico de Carga Terrestre / Aérea (Fragmento Operativo Local).</strong> Monitoreo de encomiendas asignadas a esta zona de rampa aduanera.
     </div>
 
+    <!-- TABLA DE PAQUETES OPERATIVOS -->
     <div style="background: var(--blanco); padding: 16px; border: 1px solid var(--borde); border-radius: 8px; margin-bottom: 20px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
-            <button class="btn-primario" onclick="abrirModalNuevoPaquete()">+ Registrar Nuevo Paquete Local</button>
-            <button class="btn-secundario" onclick="listarPaquetesLocales()">Actualizar</button>
+        <h3 style="margin-bottom: 16px; color: var(--azul-primario); display: flex; align-items: center; gap: 8px;">
+            <span>📦 PAQUETES OPERATIVOS</span>
+        </h3>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 16px; gap: 12px;">
+            <button class="btn-primario" onclick="abrirModalNuevoPaquete()">+ Registrar Nuevo Paquete</button>
+            <button class="btn-secundario" onclick="cargarPaquetesPorTipo()">Actualizar</button>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
-            <input type="text" id="pkt-filtro-codigo" onkeyup="filtrarPaquetesLocales()" placeholder="Filtrar por Código..." style="padding: 10px; border: 1px solid var(--borde); border-radius: 6px;">
-            <select id="pkt-filtro-estado" onchange="filtrarPaquetesLocales()" style="padding: 10px; border: 1px solid var(--borde); border-radius: 6px;">
-                <option value="">-- Filtrar por Estado --</option>
-                <option value="Registrado">Registrado</option>
-                <option value="En Tránsito">En Tránsito</option>
-                <option value="Retenido por Aduana">Retenido por Aduana</option>
-                <option value="Entregado">Entregado</option>
-            </select>
-            <input type="date" id="pkt-filtro-fecha" style="padding: 10px; border: 1px solid var(--borde); border-radius: 6px;">
+    </div>
+
+    <div class="contenedor-tabla-panel" style="margin-bottom: 40px;">
+        <div class="responsive-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código Rastreo</th>
+                        <th>Destino Final</th>
+                        <th>Estado Actual</th>
+                        <th>Prioridad</th>
+                        <th style="text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-paquetes-operativos-body">
+                    <tr><td colspan="5" style="text-align: center; color: var(--gris-medio);">Cargando paquetes operativos...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TABLA DE PAQUETES FINANCIEROS -->
+    <div style="background: var(--blanco); padding: 16px; border: 1px solid var(--borde); border-radius: 8px; margin-bottom: 20px;">
+        <h3 style="margin-bottom: 16px; color: var(--verde-exito); display: flex; align-items: center; gap: 8px;">
+            <span>💰 PAQUETES FINANCIEROS</span>
+        </h3>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 16px; gap: 12px;">
+            <button class="btn-primario" onclick="cargarPaquetesPorTipo()">Actualizar</button>
         </div>
     </div>
 
@@ -26,19 +48,21 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Código Único</th>
-                        <th>Destino Final</th>
-                        <th>Estado Actual</th>
-                        <th>Costo Despacho (Bs)</th>
+                        <th>ID Paquete</th>
+                        <th>Costo (Bs)</th>
+                        <th>Seguro (Bs)</th>
+                        <th>Impuesto (Bs)</th>
                         <th style="text-align: center;">Acciones</th>
                     </tr>
                 </thead>
-                <tbody id="tabla-paquetes-local-body">
-                    </tbody>
+                <tbody id="tabla-paquetes-financieros-body">
+                    <tr><td colspan="5" style="text-align: center; color: var(--gris-medio);">Cargando paquetes financieros...</td></tr>
+                </tbody>
             </table>
         </div>
     </div>
 
+    <!-- MODALES -->
     <div id="modal-nuevo-paquete" class="modal-aduanero-overlay">
         <div class="modal-aduanero-wrapper" style="border-top-color: var(--verde-exito, #10b981);">
             <div class="modal-header-aduanero">

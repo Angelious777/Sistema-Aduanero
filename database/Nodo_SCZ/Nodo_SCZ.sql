@@ -195,3 +195,19 @@ INSERT INTO almacen(id_almacen,nombre, ciudad, direccion, nodo_responsable)
 VALUES
 (2,'Almacén Central SCZ', 'Santa Cruz', 'Zona Industrial', 'SCZ');
 GO
+
+
+INSERT INTO CLIENTE_PUBLICO (
+    id_cliente,
+    nombre,
+    apellido_paterno,
+    apellido_materno,
+    telefono
+)
+VALUES (
+    '95AE70EB-A430-4CD4-82AE-C6BC0C27EE48',
+    'Juan',
+    'Perez',
+    'Lopez',
+    '71234567'
+);

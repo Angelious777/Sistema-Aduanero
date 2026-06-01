@@ -8,6 +8,8 @@ from metricas import obtener_metricas
 from dashboard import construir_dashboard
 from validaciones import validar_codigo
 from paquetes import obtener_todos_paquetes, obtener_paquetes_por_nodo, crear_paquete, obtener_tabla_paquete, obtener_tabla_movimiento, obtener_tabla_paquete_financiero, buscar_paquete
+from paquetes import obtener_paquetes_por_tipo_nodo
+from clientes import obtener_clientes_global
 from movimientos import registrar_movimiento, obtener_movimientos_paquete, obtener_todos_movimientos, actualizar_estado_movimiento, obtener_historial_completo
 from catalogo import obtener_fragmentos
 from respuestas import respuesta_ok, respuesta_error
@@ -104,6 +106,17 @@ def api_paquetes_nodo(nodo):
         return jsonify(respuesta_error(str(e))), 500
 
 
+@app.route('/api/clientes')
+def api_clientes():
+    """Obtiene la tabla global de clientes desde el Nodo Central"""
+    try:
+        clientes = obtener_clientes_global()
+        return jsonify(respuesta_ok(clientes))
+    except Exception as e:
+        registrar_log(f"Error en clientes globales: {e}")
+        return jsonify(respuesta_error(str(e))), 500
+
+
 @app.route('/api/paquete/buscar/<codigo>')
 def api_buscar_paquete(codigo):
     """Busca un paquete por código"""
@@ -155,6 +168,17 @@ def api_tabla_paquete_financiero(nodo):
     """Obtiene la tabla financiera de paquetes (SCZ)"""
     try:
         datos = obtener_tabla_paquete_financiero(nodo)
+
+
+        @app.route('/api/paquetes/por-tipo/<nodo>')
+        def api_paquetes_por_tipo(nodo):
+            """Obtiene paquetes operativos y financieros de un nodo específico"""
+            try:
+                datos = obtener_paquetes_por_tipo_nodo(nodo)
+                return jsonify(respuesta_ok(datos))
+            except Exception as e:
+                registrar_log(f"Error obteniendo paquetes por tipo del nodo {nodo}: {e}")
+                return jsonify(respuesta_error(str(e))), 500
         return jsonify(respuesta_ok(datos))
     except Exception as e:
         return jsonify(respuesta_error(str(e))), 500
@@ -356,6 +380,12 @@ def metricas():
 def dashboard():
     return jsonify(
         construir_dashboard()
+    )
+
+@app.route('/fragmentos')
+def fragmentos():
+    return jsonify(
+        obtener_fragmentos()
     )
 
 # ------------------------------------------------------------------

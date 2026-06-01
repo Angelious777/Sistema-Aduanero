@@ -441,6 +441,21 @@ code.codigo-nodo, code.codigo-fragmento, code.codigo-motor, code.codigo-paquete 
     border: 1px solid var(--borde);
 }
 
+.badge-status.info {
+    background: #0d6efd;
+    color: white;
+}
+
+.badge-status.alert {
+    background: #dc3545;
+    color: white;
+}
+
+.badge-status.success {
+    background: #198754;
+    color: white;
+}
+
 code.codigo-fragmento {
     color: var(--azul-primario);
     background-color: var(--azul-claro);

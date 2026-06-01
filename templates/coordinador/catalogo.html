@@ -1,89 +1,28 @@
 <section id="catalogo">
     <div class="explicacion-modulo">
-        <strong>Catálogo de Fragmentación (Diccionario de Datos Global - DDG).</strong> Matriz de configuración del sistema distribuido. Define las reglas de particionamiento, motores y políticas de replicación aplicadas en el territorio nacional.
+        <strong>Catálogo de Fragmentación (Diccionario de Datos Global - DDG).</strong>
+        Registro central que describe cómo se distribuyen las entidades del sistema entre los nodos participantes.
     </div>
 
     <div class="contenedor-tabla-panel">
         <div class="tabla-header">
-            <h3>Catálogo de Distribución de Esquemas (Metadatos)</h3>
+            <h3>Catálogo de Fragmentación</h3>
         </div>
+
         <div class="responsive-table">
             <table>
                 <thead>
                     <tr>
-                        <th>Fragmento Id</th>
-                        <th>Nodo Asignado</th>
-                        <th>Motor de Base de Datos</th>
-                        <th>Entidad Lógica</th>
-                        <th>Tipo Fragmentación / Regla</th>
-                        <th>Descripción del Contenido</th>
+                        <th>ID Fragmento</th>
+                        <th>Nombre Fragmento</th>
+                        <th>Nodo</th>
+                        <th>Motor BD</th>
+                        <th>Tabla Base</th>
+                        <th>Tipo de Fragmentación</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <td><code class="codigo-fragmento">PAQUETE_OPERATIVO_LP</code></td>
-                        <td><code class="codigo-nodo">NODO_LA_PAZ</code></td>
-                        <td><span class="badge-status info">PostgreSQL 16</span></td>
-                        <td><strong>PAQUETE</strong></td>
-                        <td>Híbrida (Horizontal por Origen 'La Paz' + Vertical)</td>
-                        <td>Atributos logísticos fundamentales de encomiendas de Occidente.</td>
-                    </tr>
-                    <tr>
-                        <td><code class="codigo-fragmento">PAQUETE_FINANCIERO_LP</code></td>
-                        <td><code class="codigo-nodo">NODO_LA_PAZ</code></td>
-                        <td><span class="badge-status info">PostgreSQL 16</span></td>
-                        <td><strong>PAQUETE</strong></td>
-                        <td>Vertical pura (Llave + Costos/Seguros)</td>
-                        <td>Precios, aranceles fiscales y control de cobro resguardados en LP.</td>
-                    </tr>
-                    <tr>
-                        <td><code class="codigo-fragmento">PAQUETE_OPERATIVO_SCZ</code></td>
-                        <td><code class="codigo-nodo">NODO_SANTA_CRUZ</code></td>
-                        <td><span class="badge-status alert">MS SQL Server 2022</span></td>
-                        <td><strong>PAQUETE</strong></td>
-                        <td>Híbrida (Horizontal por Origen 'Santa Cruz' + Vertical)</td>
-                        <td>Atributos logísticos de encomiendas emitidas en Oriente.</td>
-                    </tr>
-                    <tr>
-                        <td><code class="codigo-fragmento">PAQUETE_FINANCIERO_SCZ</code></td>
-                        <td><code class="codigo-nodo">NODO_SANTA_CRUZ</code></td>
-                        <td><span class="badge-status alert">MS SQL Server 2022</span></td>
-                        <td><strong>PAQUETE</strong></td>
-                        <td>Vertical pura (Llave + Costos/Seguros)</td>
-                        <td>Precios y aranceles de importación liquidados en SCZ.</td>
-                    </tr>
-                    <tr>
-                        <td><code class="codigo-fragmento">CLIENTE_PUBLICO</code></td>
-                        <td><code class="codigo-nodo">NODO_COORDINADOR</code></td>
-                        <td><span class="badge-status success">SQLite (Memoria Central)</span></td>
-                        <td><strong>CLIENTE</strong></td>
-                        <td>Vertical (Datos públicos generales)</td>
-                        <td>Nombre, CI y datos básicos de contacto accesibles de forma global.</td>
-                    </tr>
-                    <tr>
-                        <td><code class="codigo-fragmento">CLIENTE_PRIVADO</code></td>
-                        <td><code class="codigo-nodo">NODO_COORDINADOR</code></td>
-                        <td><span class="badge-status success">SQLite (Memoria Central)</span></td>
-                        <td><strong>CLIENTE</strong></td>
-                        <td>Vertical (Seguridad Corporativa)</td>
-                        <td>Historial comercial, cuentas y contratos de grandes importadores.</td>
-                    </tr>
-                    <tr>
-                        <td><code class="codigo-fragmento">MOVIMIENTO_LP</code></td>
-                        <td><code class="codigo-nodo">NODO_LA_PAZ</code></td>
-                        <td><span class="badge-status info">PostgreSQL 16</span></td>
-                        <td><strong>MOVIMIENTO</strong></td>
-                        <td>Horizontal Disjunta (Predicado: Nodo='LP')</td>
-                        <td>Trazabilidad física capturada en puntos de rampa de Occidente.</td>
-                    </tr>
-                    <tr>
-                        <td><code class="codigo-fragmento">MOVIMIENTO_SCZ</code></td>
-                        <td><code class="codigo-nodo">NODO_SANTA_CRUZ</code></td>
-                        <td><span class="badge-status alert">MS SQL Server 2022</span></td>
-                        <td><strong>MOVIMIENTO</strong></td>
-                        <td>Horizontal Disjunta (Predicado: Nodo='SCZ')</td>
-                        <td>Trazabilidad física capturada en puntos de rampa de Oriente.</td>
-                    </tr>
+
+                <tbody id="tabla-catalogo-fragmentacion">
                 </tbody>
             </table>
         </div>

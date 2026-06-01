@@ -14,7 +14,7 @@ def conectar_central():
 
         'DRIVER={ODBC Driver 17 for SQL Server};'
         'SERVER=26.169.255.158;'
-        'DATABASE=DB_CENTRAL;'
+        'DATABASE=nodo_central;'
         'UID=sa;'
         'PWD=1234'
     )
