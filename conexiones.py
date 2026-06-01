@@ -13,13 +13,8 @@ def conectar_central():
     return pyodbc.connect(
 
         'DRIVER={ODBC Driver 17 for SQL Server};'
-<<<<<<< HEAD
         'SERVER=26.169.255.158;'
         'DATABASE=DB_CENTRAL;'
-=======
-        'SERVER=localhost;'
-        'DATABASE=nodo_central;'
->>>>>>> b76c2513a37da4a3ad672f99ab597f81beb68953
         'UID=sa;'
         'PWD=1234'
     )

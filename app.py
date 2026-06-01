@@ -256,11 +256,7 @@ def api_trazabilidad(codigo):
         return jsonify(respuesta_error(str(e))), 500
 
 # -----------------------------------
-<<<<<<< HEAD
 # TRAZABILIDAD GLOBAL (Mantenida sin alteraciones)
-=======
-# TRAZABILIDAD GLOBAL (ANTIGUO)
->>>>>>> b76c2513a37da4a3ad672f99ab597f81beb68953
 # -----------------------------------
 
 @app.route('/trazabilidad/<codigo>')
@@ -362,7 +358,6 @@ def dashboard():
         construir_dashboard()
     )
 
-<<<<<<< HEAD
 # ------------------------------------------------------------------
 # RUTA CONTROLADORA UNIFICADA PARA SEDES REGIONALES (Dinamismo de UI)
 # ------------------------------------------------------------------
@@ -390,28 +385,6 @@ def inicio_nodo_regional(ciudad):
 # -----------------------------------
 
 if __name__ == '__main__':
-=======
-# ===================================
-# ENDPOINTS DE CATALOGO
-# ===================================
-
-@app.route('/api/catalogo')
-def api_catalogo():
-    """Obtiene el catálogo de fragmentos"""
-    try:
-        fragmentos = obtener_fragmentos()
-        return jsonify(respuesta_ok(fragmentos))
-    except Exception as e:
-        return jsonify(respuesta_error(str(e))), 500
-
-
-# ===================================
-# INICIO DE LA APLICACION
-# ===================================
-
-if __name__ == '__main__':
-    registrar_log("Iniciando aplicación del Sistema Aduanero Distribuido")
->>>>>>> b76c2513a37da4a3ad672f99ab597f81beb68953
     app.run(
         host='0.0.0.0',
         port=5000,
