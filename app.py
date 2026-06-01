@@ -15,6 +15,7 @@ from catalogo import obtener_fragmentos
 from respuestas import respuesta_ok, respuesta_error
 from logs.logger import registrar_log
 from conexiones import conectar_lp, conectar_scz, conectar_central
+from clientes import obtener_clientes_local_lp, obtener_clientes_local_scz, obtener_clientes_local_central
 
 def respuesta_ok(data): return {"success": True, "data": data}
 def respuesta_error(msg): return {"success": False, "error": msg}
@@ -115,10 +116,25 @@ def api_paquetes_nodo(nodo):
 @app.route('/api/clientes', methods=['GET'])
 def api_listar_clientes():
     try:
-        data = obtener_clientes_global()
-        return jsonify(respuesta_ok(data))
+        # Capturamos el nodo que envía el Frontend
+        nodo = request.args.get('nodo', 'global')
+        
+        if nodo == "nodo_lp":
+            # Autonomía de La Paz (PostgreSQL)
+            datos_clientes = obtener_clientes_local_lp()
+            
+        elif nodo == "nodo_scz":
+            # Autonomía de Santa Cruz (SQL Server Regional)
+            datos_clientes = obtener_clientes_local_scz()
+            
+        else:
+            # Autonomía del Nodo Central (SQL Server Master con JOIN vertical)
+            datos_clientes = obtener_clientes_local_central()
+            
+        return jsonify({"success": True, "data": datos_clientes}), 200
     except Exception as e:
-        return jsonify(respuesta_error(str(e))), 500
+        return jsonify({"success": False, "error": f"Error al consultar el nodo {nodo}: {str(e)}"}), 500
+
 
 
 @app.route('/api/paquete/buscar/<codigo>')
@@ -192,25 +208,24 @@ def api_paquetes_por_tipo(nodo):
 def api_crear_paquete():
     data = request.json or {}
     
-    # Parámetros Base e Identificadores Relacionales
+    # 1. Parámetros Base e Identificadores Relacionales
     codigo = data.get('codigo')
     destino = data.get('id_ruta')       # ID numérico real (1 o 2) de la ruta
     prioridad = data.get('prioridad')
-    nodo = data.get('nodo')
+    nodo = data.get('nodo')             # Nodo de origen ('lp' o 'scz')
     remitente = data.get('remitente')   # El UUID del cliente seleccionado
     descripcion = data.get('descripcion', '').strip()
 
-    # Nuevos Parámetros Métricos de Carga
-    # Nota: Se define 1.0 como fallback para evitar divisiones o restricciones de nulos en el motor operativo
+    # 2. Parámetros Métricos de Carga
     peso = data.get('peso')
     volumen = data.get('volumen')
     
-    # Nuevos Parámetros Financieros / Aduaneros
+    # 3. Parámetros Financieros / Aduaneros
     valor_declarado = data.get('valor_declarado')
     seguro = data.get('seguro')
     costo_envio = data.get('costo')     # Mapeado desde 'costo' en tu payload de JS
 
-    # Conversión y Sanitización de Tipos antes de enviar a paquetes.py
+    # 4. Conversión y Sanitización de Tipos (Evita restricciones de nulos en los motores)
     try:
         peso_conv = float(peso) if peso is not None else 1.0
         volumen_conv = float(volumen) if volumen is not None else 1.0
@@ -223,30 +238,41 @@ def api_crear_paquete():
             "error": f"Error de casteo en campos numéricos (Métricas/Finanzas): {str(err)}"
         }), 400
 
-    # Invocación con la firma extendida de paquetes.py
-    exito = crear_paquete(
-        codigo=codigo,
-        destino=destino,
-        prioridad=prioridad,
-        nodo=nodo,
-        remitente=remitente,
-        descripcion=descripcion,
-        peso=peso_conv,
-        volumen=volumen_conv,
-        valor_declarado=valor_conv,
-        seguro=seguro_conv,
-        costo_envio=costo_conv
-    )
-    
-    if exito:
-        return jsonify({
-            "success": True, 
-            "data": {"mensaje": "Paquete registrado exitosamente en el clúster (Operativo/Financiero)"}
-        }), 200
-    else:
+    # 5. Invocación Protegida al Motor Distribuido
+    try:
+        # Se envía la firma extendida mapeando los datos sanitizados
+        exito = crear_paquete(
+            codigo=codigo,
+            destino=destino,
+            prioridad=prioridad,
+            nodo=nodo,
+            remitente=remitente,
+            descripcion=descripcion,
+            peso=peso_conv,
+            volumen=volumen_conv,
+            valor_declarado=valor_conv,
+            seguro=seguro_conv,
+            costo_envio=costo_conv
+        )
+        
+        if exito:
+            return jsonify({
+                "success": True, 
+                "data": {"mensaje": "Paquete registrado exitosamente en el clúster (Operativo/Financiero)"}
+            }), 200
+        else:
+            # En caso de que pase los bloques try pero devuelva False de forma inesperada
+            return jsonify({
+                "success": False, 
+                "error": "El motor distribuido no pudo confirmar el registro en todos los fragmentos."
+            }), 500
+
+    except Exception as error_motor:
+        # CAPTURA CRÍTICA: Captura fallas de red, tablas inexistentes o llaves foráneas rotas
+        # y devuelve el string exacto que arrojó el driver (psycopg2 o pyodbc)
         return jsonify({
             "success": False, 
-            "error": "Error interno o desalineación relacional en el motor distribuido de base de datos"
+            "error": f"Error real del motor de base de datos: {str(error_motor)}"
         }), 500
 
 

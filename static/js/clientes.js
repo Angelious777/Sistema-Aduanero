@@ -54,10 +54,21 @@ function cerrarModalVerCliente() {
 async function listarClientesReplicados() {
     const tbody = document.getElementById("tabla-clientes-replicados-body");
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">🔄 Cargando datos del clúster central...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">🔄 Cargando datos del nodo local...</td></tr>`;
+
+    // === DETECCIÓN DEL NODO ACTUAL (Igual a tu lógica de guardado) ===
+    const path = window.location.pathname.toLowerCase().replace(/-/g, "_");
+    let nodoActual = "global"; // Por si estás en una vista de administración central
+
+    if (path.includes("la_paz") || path.includes("lp")) {
+        nodoActual = "nodo_lp";
+    } else if (path.includes("santa_cruz") || path.includes("scz")) {
+        nodoActual = "nodo_scz";
+    }
 
     try {
-        const response = await fetch('/api/clientes');
+        // Enviamos el nodo como Query Parameter
+        const response = await fetch(`/api/clientes?nodo=${nodoActual}`);
         const resultado = await response.json();
         if (resultado.success) {
             window.CLIENTES_GLOBAL = resultado.data || [];
@@ -66,7 +77,7 @@ async function listarClientesReplicados() {
             tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);">❌ Error: ${resultado.error}</td></tr>`;
         }
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);">❌ Desconectado de la red distribuida</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);">❌ Desconectado de la red distribuida local</td></tr>`;
     }
 }
 

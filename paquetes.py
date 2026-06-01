@@ -12,7 +12,6 @@ def obtener_todos_paquetes():
         conn = conectar_central()
         cur = conn.cursor()
         
-        # Consultamos la tabla global real
         cur.execute("""
             SELECT codigo_rastreo, descripcion, prioridad, 'Central/Distribuido' as nodo
             FROM PAQUETE_GLOBAL
@@ -21,7 +20,7 @@ def obtener_todos_paquetes():
         for row in cur.fetchall():
             paquetes.append({
                 "codigo": row[0],
-                "destino": row[1], # Usado como mapeo temporal descriptivo
+                "destino": row[1], 
                 "prioridad": row[2],
                 "estado": "Sincronizado",
                 "nodo": row[3]
@@ -39,12 +38,10 @@ def obtener_todos_paquetes():
 def obtener_paquetes_por_nodo(nodo):
     """Obtiene paquetes de un nodo específico"""
     paquetes = []
-    
     try:
         if nodo.lower() in ['lapaz', 'la_paz', 'lp']:
             conn = conectar_lp()
             cur = conn.cursor()
-            
             cur.execute("""
                 SELECT codigo_rastreo, id_ruta, prioridad, 'Registrado' as estado
                 FROM paquete_operativo_lp
@@ -52,7 +49,6 @@ def obtener_paquetes_por_nodo(nodo):
         else:  # Santa Cruz
             conn = conectar_scz()
             cur = conn.cursor()
-            
             cur.execute("""
                 SELECT codigo_rastreo, id_ruta, prioridad, 'Registrado' as estado
                 FROM PAQUETE_OPERATIVO_SCZ
@@ -74,138 +70,159 @@ def obtener_paquetes_por_nodo(nodo):
     return paquetes
 
 
-def crear_paquete(codigo, destino, prioridad, nodo, remitente=None, descripcion="", peso=1.0, volumen=1.0, valor_declarado=0.0, seguro=0.0, costo_envio=0.0):
-    """
-    Crea un nuevo paquete respetando la fragmentación híbrida y replicando 
-    de manera íntegra todas las columnas operativas y financieras al Nodo Central.
-    """
-    ID_CLIENTE_REAL = remitente if remitente else "BE5ACC13-D61C-4DA2-A193-90DA21081108"
-    ID_ESTADO_REGISTRADO = 1                                  
-    ID_ALMACEN_DEFAULT = 1 if nodo.lower() in ['lapaz', 'la_paz', 'lp'] else 2
+def crear_paquete(codigo, destino, prioridad, nodo, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio):
+    id_paquete = str(uuid.uuid4())
     
     try:
-        ID_RUTA_DEFAULT = int(destino)
-    except:
-        ID_RUTA_DEFAULT = 1 if nodo.lower() in ['lapaz', 'la_paz', 'lp'] else 2
-
-    id_paquete_nuevo = str(uuid.uuid4())
-
-    # =========================================================
-    # CASO NODO LA PAZ: BYPASS DIRECTO AL NODO CENTRAL
-    # =========================================================
-    if nodo.lower() in ['lapaz', 'la_paz', 'lp']:
-        registrar_log("[INFO] Nodo La Paz detectado como DESCONECTADO. Iniciando bypass a nodo_central.")
-        try:
-            conn = conectar_central()
-            cur = conn.cursor()
+        # 1. NODO CENTRAL: Ahora le pasamos TODOS los parámetros para poblar el esquema global
+        insertar_en_central(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
             
-            # 🔄 CORREGIDO: Se cambiaron los %s por ? para evitar el fallo en pyodbc
-            query_central = """
-                INSERT INTO PAQUETE_GLOBAL (
-                    id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario,
-                    id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, 
-                    prioridad, valor_declarado, seguro, costo_envio
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """
-            cur.execute(query_central, (
-                id_paquete_nuevo, codigo, ID_CLIENTE_REAL, ID_CLIENTE_REAL,
-                ID_ESTADO_REGISTRADO, ID_RUTA_DEFAULT, ID_ALMACEN_DEFAULT, peso, volumen, descripcion,
-                prioridad, valor_declarado, seguro, costo_envio
-            ))
+        # 2. NODO ORIGEN: Registro completo (Operativo + Financiero)
+        if nodo.lower() in ['lapaz', 'la_paz', 'lp']:
+            insertar_en_lp(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
+        else:
+            insertar_en_scz(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
             
-            conn.commit()
-            cur.close()
-            conn.close()
-            registrar_log(f"[OK] Paquete {codigo} guardado exitosamente en PAQUETE_GLOBAL (Bypass LP)")
-            return True
-        except Exception as e:
-            registrar_log(f"[ERROR] Fallo critico en bypass a nodo_central para LP: {e}")
-            print(f"Error en bypass LP: {e}")
-            return False
-
-    # =========================================================
-    # CASO NODO SANTA CRUZ: ESCRITURA EN FRAGMENTOS OPERATIVO Y FINANCIERO
-    # =========================================================
-    else:
-        try:
-            conn = conectar_scz()
-            cur = conn.cursor()
-            
-            # 1. Inserción en la fracción Operativa Local
-            query_operativo = """
-                INSERT INTO PAQUETE_OPERATIVO_SCZ (
-                    id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario,
-                    id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, prioridad
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """
-            cur.execute(query_operativo, (
-                id_paquete_nuevo, codigo, ID_CLIENTE_REAL, ID_CLIENTE_REAL,
-                ID_ESTADO_REGISTRADO, ID_RUTA_DEFAULT, ID_ALMACEN_DEFAULT, peso, volumen, descripcion, prioridad
-            ))
-            
-            # 2. Inserción en la fracción Financiera Local
-            query_financiero = """
-                INSERT INTO PAQUETE_FINANCIERO_SCZ (
-                    id_paquete, valor_declarado, seguro, costo_envio
-                ) VALUES (?, ?, ?, ?)
-            """
-            cur.execute(query_financiero, (id_paquete_nuevo, valor_declarado, seguro, costo_envio))
-            
-            conn.commit()
-            cur.close()
-            conn.close()
-            
-            # 3. Réplica Unificada e Integral al Nodo Central
-            try:
-                conn_c = conectar_central()
-                cur_c = conn_c.cursor()
+        # 3. NODO DESTINO: Replicación Parcial (Solo Operativo)
+        es_origen_lp = nodo.lower() in ['lapaz', 'la_paz', 'lp']
+        
+        if int(destino) == 1 and not es_origen_lp:
+            insertar_operativo_lp_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen)
+        elif int(destino) == 2 and es_origen_lp:
+            insertar_operativo_scz_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen)
                 
-                # 🔄 CORREGIDO: Se cambiaron los %s por ? para que coincida con el driver de la central
-                query_mirror = """
-                    INSERT INTO PAQUETE_GLOBAL (
-                        id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario,
-                        id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, 
-                        prioridad, valor_declarado, seguro, costo_envio
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """
-                cur_c.execute(query_mirror, (
-                    id_paquete_nuevo, codigo, ID_CLIENTE_REAL, ID_CLIENTE_REAL,
-                    ID_ESTADO_REGISTRADO, ID_RUTA_DEFAULT, ID_ALMACEN_DEFAULT, peso, volumen, descripcion, 
-                    prioridad, valor_declarado, seguro, costo_envio
-                ))
-                
-                conn_c.commit()
-                cur_c.close()
-                conn_c.close()
-                registrar_log(f"[OK] Replica exitosa en PAQUETE_GLOBAL para el paquete {codigo}.")
-            except Exception as ex_mirror:
-                registrar_log(f"[ALERTA] Guardado local en SCZ exitoso, pero fallo replica a central: {ex_mirror}")
-                print(f"Fallo de replica: {ex_mirror}")
+        return True
 
-            registrar_log(f"[OK] Paquete {codigo} creado de forma hibrida en fragmentos de Santa Cruz.")
-            return True
-            
-        except Exception as e:
-            registrar_log(f"[ERROR] Error creando paquete en Santa Cruz: {e}")
-            print(f"Error creando paquete en Santa Cruz: {e}")
-            return False
+    except Exception as e:
+        registrar_log(f"FALLO EN TRANSACCIÓN DISTRIBUIDA: {str(e)}")
+        raise e
+
+
+def insertar_operativo_lp_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen):
+    """Inserta la parte operativa en PostgreSQL (LP) respetando las restricciones NOT NULL"""
+    conn = conectar_lp()
+    cur = conn.cursor()
+    
+    id_cliente_destinatario = remitente  
+    id_estado = 1                        
+    id_almacen_actual = 1                 
+
+    cur.execute("""
+        INSERT INTO paquete_operativo_lp 
+        (id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario, 
+         id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, prioridad) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """, (
+        id_paquete, codigo, remitente, id_cliente_destinatario,
+        id_estado, int(destino), id_almacen_actual, peso, volumen, descripcion, prioridad
+    ))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def insertar_en_lp(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio):
+    """Coordina la inserción fragmentada en La Paz"""
+    # 1. Fragmento Operativo
+    insertar_operativo_lp_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen)
+    
+    # 2. Fragmento Financiero
+    conn = conectar_lp()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO paquete_financiero_lp 
+        (id_paquete, valor_declarado, seguro, costo_envio) 
+        VALUES (%s, %s, %s, %s)
+    """, (id_paquete, valor_declarado, seguro, costo_envio))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def insertar_operativo_scz_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen):
+    """Inserta la parte operativa en SQL Server (SCZ) respetando las restricciones NOT NULL"""
+    conn = conectar_scz()
+    cur = conn.cursor()
+    
+    id_cliente_destinatario = remitente  
+    id_estado = 1                        
+    id_almacen_actual = 1                 
+
+    cur.execute("""
+        INSERT INTO PAQUETE_OPERATIVO_SCZ 
+        (id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario, 
+         id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, prioridad) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        id_paquete, codigo, remitente, id_cliente_destinatario,
+        id_estado, int(destino), id_almacen_actual, peso, volumen, descripcion, prioridad
+    ))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+def insertar_en_scz(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio):
+    """Coordina la inserción fragmentada en Santa Cruz"""
+    # 1. Fragmento Operativo
+    insertar_operativo_scz_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen)
+    
+    # 2. Fragmento Financiero
+    conn = conectar_scz()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO PAQUETE_FINANCIERO_SCZ 
+        (id_paquete, valor_declarado, seguro, costo_envio) 
+        VALUES (?, ?, ?, ?)
+    """, (id_paquete, valor_declarado, seguro, costo_envio))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def insertar_en_central(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio):
+    """Registra el paquete con su esquema completo en el Nodo Central (SQL Server)"""
+    try:
+        conn = conectar_central()
+        cur = conn.cursor()
+        
+        # Valores por defecto requeridos para cumplir los NOT NULL de las FKs maestras en Central
+        id_cliente_destinatario = remitente  # Si el payload no trae destinatario, usamos el remitente
+        id_estado = 1                        # ID de estado 'Registrado'
+        id_almacen_actual = 1                 # ID del almacén inicial
+        
+        cur.execute("""
+            INSERT INTO PAQUETE_GLOBAL 
+            (id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario, 
+             id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, 
+             prioridad, valor_declarado, seguro, costo_envio) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            id_paquete, codigo, remitente, id_cliente_destinatario,
+            id_estado, int(destino), id_almacen_actual, peso, volumen, descripcion,
+            prioridad, valor_declarado, seguro, costo_envio
+        ))
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        registrar_log(f"FALLO CRÍTICO: No se pudo registrar en Central: {e}")
+        raise e
 
 
 def buscar_paquete(codigo):
-    """Busca un paquete en todos los nodos"""
+    """Busca un paquete de forma transversal en el clúster"""
     resultado = None
     
+    # Buscar en La Paz (PostgreSQL)
     try:
-        # Buscar en La Paz
         conn_lp = conectar_lp()
         cur_lp = conn_lp.cursor()
-        
         cur_lp.execute("""
             SELECT codigo_rastreo, id_ruta, prioridad, 'Registrado' as estado
             FROM paquete_operativo_lp
             WHERE codigo_rastreo = %s
         """, (codigo,))
-        
         fila = cur_lp.fetchone()
         if fila:
             resultado = {
@@ -215,25 +232,22 @@ def buscar_paquete(codigo):
                 "estado": fila[3],
                 "nodo": "La Paz"
             }
-        
         cur_lp.close()
         conn_lp.close()
     except:
         pass
     
+    # Buscar en Santa Cruz (SQL Server) si no se encontró en LP
     if not resultado:
         try:
-            # Buscar en Santa Cruz
-            conn_scz = conectar_scz()
-            cur_scz = conn_scz.cursor()
-            
-            cur_scz.execute(f"""
+            conn = conectar_scz()
+            cur = conn.cursor()
+            cur.execute("""
                 SELECT codigo_rastreo, id_ruta, prioridad, 'Registrado' as estado
                 FROM PAQUETE_OPERATIVO_SCZ
-                WHERE codigo_rastreo = '{codigo}'
-            """)
-            
-            fila = cur_scz.fetchone()
+                WHERE codigo_rastreo = ?
+            """, (codigo,))
+            fila = cur.fetchone()  # Corregido: Usando el cursor correcto 'cur'
             if fila:
                 resultado = {
                     "codigo": fila[0],
@@ -242,9 +256,8 @@ def buscar_paquete(codigo):
                     "estado": fila[3],
                     "nodo": "Santa Cruz"
                 }
-            
-            cur_scz.close()
-            conn_scz.close()
+            cur.close()
+            conn.close()
         except:
             pass
     
@@ -254,9 +267,7 @@ def buscar_paquete(codigo):
 def obtener_tabla_paquete(nodo):
     datos = []
     try:
-        # Nota: He ajustado el SELECT para traer exactamente lo que el frontend necesita
         query = "SELECT id_paquete, codigo_rastreo, descripcion FROM "
-        
         if "la_paz" in nodo.lower() or "lp" in nodo.lower():
             conn = conectar_lp()
             table = "paquete_operativo_lp"
@@ -270,14 +281,12 @@ def obtener_tabla_paquete(nodo):
         datos = [dict(zip(columnas, f)) for f in cur.fetchall()]
         cur.close()
         conn.close()
-        return datos
     except Exception as e:
         registrar_log(f"Error consultando paquetes en {nodo}: {e}")
-        return []
+    return datos
 
 
 def obtener_tabla_movimiento(nodo):
-    """Obtiene los datos completos de la tabla MOVIMIENTO de un nodo"""
     try:
         if nodo.lower() in ['lapaz', 'la_paz', 'lp']:
             conn = conectar_lp()
@@ -290,14 +299,9 @@ def obtener_tabla_movimiento(nodo):
         
         columnas = [descripcion[0] for descripcion in cur.description]
         filas = cur.fetchall()
-        
-        datos = []
-        for fila in filas:
-            datos.append(dict(zip(columnas, fila)))
-        
+        datos = [dict(zip(columnas, fila)) for fila in filas]
         cur.close()
         conn.close()
-        
         return datos
     except Exception as e:
         print(f"Error obteniendo tabla MOVIMIENTO de {nodo}:", e)
@@ -315,16 +319,14 @@ def obtener_tabla_paquete_financiero(nodo):
         cur.close() 
         conn.close()
         return datos
-    except: return []
+    except: 
+        return []
 
 
 def obtener_paquetes_por_tipo_nodo(nodo):
-    """Retorna las colecciones distribuidas mapeando de forma exacta los nombres del motor relacional"""
     resultado = {"operativos": [], "financieros": []}
-
     try:
         if nodo.lower() in ['lapaz', 'la_paz', 'lp']:
-            # Redirección analítica al nodo central ya que LP actúa de forma remota/desconectada en local
             conn = conectar_central()
             cur = conn.cursor()
             
@@ -339,7 +341,6 @@ def obtener_paquetes_por_tipo_nodo(nodo):
             cur.close()
             conn.close()
         else:
-            # Santa Cruz - Consulta cruzada a tablas reales fragmentadas verticalmente
             conn = conectar_scz()
             cur = conn.cursor()
 
@@ -353,7 +354,6 @@ def obtener_paquetes_por_tipo_nodo(nodo):
 
             cur.close()
             conn.close()
-            
     except Exception as e:
         registrar_log(f"Error en obtener_paquetes_por_tipo_nodo para {nodo}: {e}")
 

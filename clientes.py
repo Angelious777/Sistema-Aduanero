@@ -38,56 +38,49 @@ def obtener_clientes_global():
     return clientes
 
 def registrar_cliente_nodo(nit_ci, nombre, apellido_paterno, apellido_materno, telefono, direccion, email, nodo_destino):
-    # Generación de UUID único global para todo el ecosistema
     id_cliente_global = str(uuid.uuid4())
     fecha_actual = datetime.now()
 
-    conn_regional = None
-    cur_regional = None
-    conn_central = None
-    cur_central = None
+    # Inicializamos todas las conexiones en None
+    conn_lp, cur_lp = None, None
+    conn_scz, cur_scz = None, None
+    conn_central, cur_central = None, None
 
     try:
         # =========================================================
-        # ACCIÓN 1: INSERT NATIVO EN EL NODO REGIONAL PERIMETRAL
+        # 1. INSERCIÓN EN LA PAZ (PostgreSQL) - Replicación Total
         # =========================================================
-        if nodo_destino == "nodo_lp":
-            conn_regional = conectar_lp()
-            cur_regional = conn_regional.cursor()
-            # PostgreSQL: Sintaxis nativa %s (Minúsculas según tu DDL)
-            sql_lp = """
-                INSERT INTO cliente_publico (id_cliente, nombre, apellido_paterno, apellido_materno, telefono, fecha_registro)
-                VALUES (%s, %s, %s, %s, %s, %s);
-            """
-            cur_regional.execute(sql_lp, (id_cliente_global, nombre, apellido_paterno, apellido_materno, telefono, fecha_actual))
-            
-        elif nodo_destino == "nodo_scz":
-            conn_regional = conectar_scz()
-            cur_regional = conn_regional.cursor()
-            # SQL Server: Sintaxis nativa con marcadores ?
-            sql_scz = """
-                INSERT INTO CLIENTE_PUBLICO (id_cliente, nombre, apellido_paterno, apellido_materno, telefono, fecha_registro)
-                VALUES (?, ?, ?, ?, ?, ?);
-            """
-            cur_regional.execute(sql_scz, (id_cliente_global, nombre, apellido_paterno, apellido_materno, telefono, fecha_actual))
-        else:
-            raise ValueError(f"Firma del nodo regional '{nodo_destino}' no válida.")
+        conn_lp = conectar_lp()
+        cur_lp = conn_lp.cursor()
+        sql_lp = """
+            INSERT INTO cliente_publico (id_cliente, nombre, apellido_paterno, apellido_materno, telefono, fecha_registro)
+            VALUES (%s, %s, %s, %s, %s, %s);
+        """
+        cur_lp.execute(sql_lp, (id_cliente_global, nombre, apellido_paterno, apellido_materno, telefono, fecha_actual))
 
         # =========================================================
-        # ACCIÓN 2: INSERCIÓN VERTICAL EN NODO_CENTRAL (SQL SERVER)
+        # 2. INSERCIÓN EN SANTA CRUZ (SQL Server) - Replicación Total
+        # =========================================================
+        conn_scz = conectar_scz()
+        cur_scz = conn_scz.cursor()
+        sql_scz = """
+            INSERT INTO CLIENTE_PUBLICO (id_cliente, nombre, apellido_paterno, apellido_materno, telefono, fecha_registro)
+            VALUES (?, ?, ?, ?, ?, ?);
+        """
+        cur_scz.execute(sql_scz, (id_cliente_global, nombre, apellido_paterno, apellido_materno, telefono, fecha_actual))
+
+        # =========================================================
+        # 3. INSERCIÓN EN NODO CENTRAL (SQL Server)
         # =========================================================
         conn_central = conectar_central()
-        conn_central.autocommit = False  # Forzar entorno transaccional aislado
         cur_central = conn_central.cursor()
 
-        # Primero la tabla padre debido a la restricción de clave foránea (FK)
         sql_central_pub = """
             INSERT INTO CLIENTE_PUBLICO (id_cliente, nombre, apellido_paterno, apellido_materno, telefono, fecha_registro)
             VALUES (?, ?, ?, ?, ?, ?);
         """
         cur_central.execute(sql_central_pub, (id_cliente_global, nombre, apellido_paterno, apellido_materno, telefono, fecha_actual))
 
-        # Segundo la tabla dependiente privada que resguarda datos confidenciales
         sql_central_priv = """
             INSERT INTO CLIENTE_PRIVADO (id_cliente, documento_identidad, direccion, email)
             VALUES (?, ?, ?, ?);
@@ -95,21 +88,93 @@ def registrar_cliente_nodo(nit_ci, nombre, apellido_paterno, apellido_materno, t
         cur_central.execute(sql_central_priv, (id_cliente_global, nit_ci, direccion, email))
 
         # =========================================================
-        # ACCIÓN 3: CONFIRMACIÓN DE LA TRANSACCIÓN (COMMIT)
+        # 4. COMMITS EXPLÍCITOS EN TODOS LOS MOTORES
         # =========================================================
-        conn_regional.commit()
-        conn_central.commit()
+        conn_lp.commit()       # Asegura los datos en PostgreSQL
+        conn_scz.commit()      # Asegura los datos en SQL Server Regional
+        conn_central.commit()  # Asegura los datos en el Nodo Central
+        
         return True
 
     except Exception as e:
-        # Si un nodo falla o está inaccesible por red, se aborta todo de forma inmediata
-        if conn_regional: conn_regional.rollback()
+        # Rollback en cascada si cualquiera de los 3 motores falla
+        if conn_lp: conn_lp.rollback()
+        if conn_scz: conn_scz.rollback()
         if conn_central: conn_central.rollback()
-        print(f"--> [CRITICAL ROLLBACK EXECUTED]: {str(e)}")
+        print(f"--> [DISTRIBUTED TRANSACTION ROLLBACK]: {str(e)}")
         raise e
 
     finally:
-        if cur_regional: cur_regional.close()
-        if conn_regional: conn_regional.close()
+        # Cierre limpio de todo el pool de conexiones abiertas
+        if cur_lp: cur_lp.close()
+        if conn_lp: conn_lp.close()
+        if cur_scz: cur_scz.close()
+        if conn_scz: conn_scz.close()
         if cur_central: cur_central.close()
         if conn_central: conn_central.close()
+
+
+def obtener_clientes_local_lp():
+    """Consulta la base de datos local de La Paz (PostgreSQL)"""
+    clientes = []
+    conn = None
+    cur = None
+    try:
+        conn = conectar_lp()
+        cur = conn.cursor()
+        # Nota: Usamos minúsculas de acuerdo al DDL de tu tabla en Postgres
+        cur.execute("""
+            SELECT id_cliente, nombre, apellido_paterno, apellido_materno, telefono, fecha_registro
+            FROM cliente_publico
+        """)
+        filas = cur.fetchall()
+        for fila in filas:
+            fecha_registro = fila[5].strftime('%Y-%m-%d %H:%M:%S') if fila[5] else 'Automático'
+            nombre_completo = " ".join(filter(None, [fila[1], fila[2], fila[3]])).strip()
+
+            clientes.append({
+                "id": str(fila[0]),
+                "nombre": nombre_completo,
+                "documento": "Local LP", # El fragmento operativo local de LP no guarda el DNI/Dirección/Email
+                "telefono": fila[4],
+                "correo": "Consulte a Central",
+                "registro": fecha_registro,
+                "direccion": "Datos resguardados en Central"
+            })
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+    return clientes
+
+
+def obtener_clientes_local_scz():
+    """Consulta la base de datos local de Santa Cruz (SQL Server Regional)"""
+    clientes = []
+    conn = None
+    cur = None
+    try:
+        conn = conectar_scz()
+        cur = conn.cursor()
+        # Nota: Usamos MAYÚSCULAS de acuerdo al DDL de tu tabla en SQL Server Regional
+        cur.execute("""
+            SELECT id_cliente, nombre, apellido_paterno, apellido_materno, telefono, fecha_registro
+            FROM CLIENTE_PUBLICO
+        """)
+        filas = cur.fetchall()
+        for fila in filas:
+            fecha_registro = fila[5].strftime('%Y-%m-%d %H:%M:%S') if fila[5] else 'Automático'
+            nombre_completo = " ".join(filter(None, [fila[1], fila[2], fila[3]])).strip()
+
+            clientes.append({
+                "id": str(fila[0]),
+                "nombre": nombre_completo,
+                "documento": "Local SCZ", # El fragmento operativo local de SCZ tampoco guarda datos privados
+                "telefono": fila[4] if fila[4] else '—',
+                "correo": "Consulte a Central",
+                "registro": fecha_registro,
+                "direccion": "Datos resguardados en Central"
+            })
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+    return clientes
