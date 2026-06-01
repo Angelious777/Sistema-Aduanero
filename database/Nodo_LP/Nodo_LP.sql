@@ -1,4 +1,4 @@
-# SCRIPT — NODO LA PAZ (PostgreSQL)
+-- SCRIPT — NODO LA PAZ (PostgreSQL)
 
 
 CREATE DATABASE nodo_lp;
@@ -9,18 +9,23 @@ CREATE DATABASE nodo_lp;
 -- TABLA: CLIENTE_PUBLICO
 -- =========================================================
 
-CREATE TABLE cliente_publico (
-    id_cliente SERIAL PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    telefono VARCHAR(20)
-);
+CREATE TABLE CLIENTE_PUBLICO (
+    id_cliente UUID PRIMARY KEY,
 
+    nombre VARCHAR(100) NOT NULL,
+    apellido_paterno VARCHAR(100) NOT NULL,
+    apellido_materno VARCHAR(100),
+
+    telefono VARCHAR(20),
+
+    fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 -- =========================================================
 -- TABLA: ALMACEN
 -- =========================================================
 
 CREATE TABLE almacen (
-    id_almacen SERIAL PRIMARY KEY,
+    id_almacen PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     ciudad VARCHAR(50) NOT NULL,
     direccion VARCHAR(200),
@@ -41,93 +46,135 @@ CREATE TABLE estado (
 -- =========================================================
 
 CREATE TABLE ruta (
-    id_ruta SERIAL PRIMARY KEY,
-    origen VARCHAR(50) NOT NULL,
-    destino VARCHAR(50) NOT NULL,
-    descripcion TEXT
+    id_ruta PRIMARY KEY,
+
+    id_almacen_origen INT NOT NULL,
+
+    id_almacen_destino INT NOT NULL,
+
+    descripcion VARCHAR(300),
+
+    CONSTRAINT FK_RUTA_ORIGEN
+        FOREIGN KEY (id_almacen_origen)
+        REFERENCES almacen(id_almacen),
+
+    CONSTRAINT FK_RUTA_DESTINO
+        FOREIGN KEY (id_almacen_destino)
+        REFERENCES almacen(id_almacen),
+
+    CONSTRAINT UQ_RUTA
+        UNIQUE(id_almacen_origen, id_almacen_destino)
 );
 
 -- =========================================================
 -- TABLA: PAQUETE_OPERATIVO_LP
 -- =========================================================
 
-CREATE TABLE paquete_operativo_lp (
-    id_paquete SERIAL PRIMARY KEY,
-    codigo_rastreo VARCHAR(50) UNIQUE NOT NULL,
+CREATE TABLE PAQUETE_OPERATIVO_LP (
+    id_paquete UUID PRIMARY KEY,
 
-    id_cliente_remitente INT NOT NULL,
-    id_cliente_destinatario INT NOT NULL,
+    codigo_rastreo VARCHAR(30) NOT NULL UNIQUE,
 
-    peso DECIMAL(10,2),
-    volumen DECIMAL(10,2),
+    id_cliente_remitente UUID NOT NULL,
+
+    id_cliente_destinatario UUID NOT NULL,
+
+    id_estado INT NOT NULL,
+
+    id_ruta INT NOT NULL,
+
+    id_almacen_actual INT NOT NULL,
+
+    peso NUMERIC(10,2),
+
+    volumen NUMERIC(10,2),
+
+    descripcion VARCHAR(300),
+
     prioridad VARCHAR(20),
 
-    id_estado_actual INT,
-    id_ruta INT,
+    fecha_registro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    id_almacen_origen INT,
-    id_almacen_destino INT,
-    id_almacen_actual INT,
+    CONSTRAINT FK_POP_REMITENTE
+        FOREIGN KEY (id_cliente_remitente)
+        REFERENCES CLIENTE_PUBLICO(id_cliente),
 
-    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT FK_POP_DESTINATARIO
+        FOREIGN KEY (id_cliente_destinatario)
+        REFERENCES CLIENTE_PUBLICO(id_cliente),
 
-    nodo_origen VARCHAR(20) DEFAULT 'LP',
+    CONSTRAINT FK_POP_ESTADO
+        FOREIGN KEY (id_estado)
+        REFERENCES ESTADO(id_estado),
 
-    FOREIGN KEY (id_cliente_remitente)
-        REFERENCES cliente_publico(id_cliente),
+    CONSTRAINT FK_POP_RUTA
+        FOREIGN KEY (id_ruta)
+        REFERENCES RUTA(id_ruta),
 
-    FOREIGN KEY (id_cliente_destinatario)
-        REFERENCES cliente_publico(id_cliente),
-
-    FOREIGN KEY (id_estado_actual)
-        REFERENCES estado(id_estado),
-
-    FOREIGN KEY (id_ruta)
-        REFERENCES ruta(id_ruta),
-
-    FOREIGN KEY (id_almacen_origen)
-        REFERENCES almacen(id_almacen),
-
-    FOREIGN KEY (id_almacen_destino)
-        REFERENCES almacen(id_almacen),
-
-    FOREIGN KEY (id_almacen_actual)
-        REFERENCES almacen(id_almacen)
+    CONSTRAINT FK_POP_ALMACEN
+        FOREIGN KEY (id_almacen_actual)
+        REFERENCES ALMACEN(id_almacen)
 );
 
 -- =========================================================
 -- TABLA: PAQUETE_FINANCIERO_LP
 -- =========================================================
 
-CREATE TABLE paquete_financiero_lp (
-    id_paquete INT PRIMARY KEY,
+CREATE TABLE PAQUETE_FINANCIERO_LP (
+    id_paquete UUID PRIMARY KEY,
 
-    valor_declarado DECIMAL(12,2),
-    costo_envio DECIMAL(12,2),
-    seguro DECIMAL(12,2),
+    valor_declarado NUMERIC(12,2),
 
-    FOREIGN KEY (id_paquete)
-        REFERENCES paquete_operativo_lp(id_paquete)
+    seguro NUMERIC(12,2),
+
+    costo_envio NUMERIC(12,2),
+
+    CONSTRAINT FK_PFP_OPERATIVO
+        FOREIGN KEY (id_paquete)
+        REFERENCES PAQUETE_OPERATIVO_LP(id_paquete)
 );
 
 -- =========================================================
 -- TABLA: MOVIMIENTO_LP
 -- =========================================================
 
-CREATE TABLE movimiento_lp (
-    id_movimiento SERIAL PRIMARY KEY,
+CREATE TABLE MOVIMIENTO_LP (
+    id_movimiento UUID PRIMARY KEY,
 
-    id_paquete INT NOT NULL,
+    id_paquete UUID NOT NULL,
 
-    descripcion VARCHAR(200) NOT NULL,
-    ubicacion VARCHAR(100),
+    id_almacen INT NOT NULL,
 
-    fecha_movimiento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_movimiento TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    nodo_responsable VARCHAR(20) DEFAULT 'LP',
+    observacion VARCHAR(300),
 
-    FOREIGN KEY (id_paquete)
-        REFERENCES paquete_operativo_lp(id_paquete)
+    CONSTRAINT FK_MLP_PAQUETE
+        FOREIGN KEY (id_paquete)
+        REFERENCES PAQUETE_OPERATIVO_LP(id_paquete),
+
+    CONSTRAINT FK_MLP_ALMACEN
+        FOREIGN KEY (id_almacen)
+        REFERENCES ALMACEN(id_almacen)
+);
+
+-- =========================================================
+-- TABLA: COLA_PENDIENTES
+-- =========================================================
+
+CREATE TABLE cola_pendientes (
+    id_pendiente INT IDENTITY(1,1) PRIMARY KEY,
+
+    nodo_origen VARCHAR(20),
+
+    operacion VARCHAR(50),
+    tabla_afectada VARCHAR(50),
+
+    id_registro VARCHAR(50),
+
+    fecha_registro DATETIME DEFAULT GETDATE(),
+
+    estado VARCHAR(30)
 );
 
 -- =========================================================

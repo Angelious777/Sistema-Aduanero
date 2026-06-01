@@ -1,4 +1,4 @@
-# SCRIPT — NODO CENTRAL (SQL Server)
+-- SCRIPT — NODO CENTRAL (SQL Server)
 
 CREATE DATABASE nodo_central;
 GO
@@ -7,26 +7,68 @@ USE nodo_central;
 GO
 
 -- =========================================================
--- TABLA: CLIENTE_GLOBAL
+-- TABLA: CLIENTE_PUBLICO
 -- =========================================================
 
-CREATE TABLE cliente_global (
-    id_cliente INT IDENTITY(1,1) PRIMARY KEY,
+CREATE TABLE CLIENTE_PUBLICO (
+    id_cliente UNIQUEIDENTIFIER PRIMARY KEY,
 
     nombre VARCHAR(100) NOT NULL,
+    apellido_paterno VARCHAR(100) NOT NULL,
+    apellido_materno VARCHAR(100),
+
     telefono VARCHAR(20),
 
-    ci VARCHAR(30),
-    direccion VARCHAR(200),
-    email VARCHAR(100)
+    fecha_registro DATETIME NOT NULL DEFAULT GETDATE()
 );
+
+-- =========================================================
+-- TABLA: CLIENTE_PRIVADO
+-- =========================================================
+
+CREATE TABLE CLIENTE_PRIVADO (
+    id_cliente UNIQUEIDENTIFIER PRIMARY KEY,
+
+    documento_identidad VARCHAR(30) NOT NULL UNIQUE,
+
+    direccion VARCHAR(250),
+
+    email VARCHAR(100) UNIQUE,
+
+    CONSTRAINT FK_CLIENTE_PRIVADO
+        FOREIGN KEY (id_cliente)
+        REFERENCES CLIENTE_PUBLICO(id_cliente)
+);
+
+-- =========================================================
+-- TABLA: CLIENTE_PRIVADO
+-- =========================================================
+
+CREATE VIEW CLIENTE_GLOBAL
+AS
+SELECT
+    cp.id_cliente,
+    cp.nombre,
+    cp.apellido_paterno,
+    cp.apellido_materno,
+    cp.telefono,
+    cp.fecha_registro,
+
+    cv.documento_identidad,
+    cv.direccion,
+    cv.email
+
+FROM CLIENTE_PUBLICO cp
+INNER JOIN CLIENTE_PRIVADO cv
+    ON cp.id_cliente = cv.id_cliente;
+
 
 -- =========================================================
 -- TABLA: ALMACEN
 -- =========================================================
 
 CREATE TABLE almacen (
-    id_almacen INT IDENTITY(1,1) PRIMARY KEY,
+    id_almacen INT PRIMARY KEY,
 
     nombre VARCHAR(100) NOT NULL,
     ciudad VARCHAR(50),
@@ -49,86 +91,103 @@ CREATE TABLE estado (
 -- =========================================================
 
 CREATE TABLE ruta (
-    id_ruta INT IDENTITY(1,1) PRIMARY KEY,
+    id_ruta INT PRIMARY KEY,
 
-    origen VARCHAR(50),
-    destino VARCHAR(50),
+    id_almacen_origen INT NOT NULL,
 
-    descripcion TEXT
+    id_almacen_destino INT NOT NULL,
+
+    descripcion VARCHAR(300),
+
+    CONSTRAINT FK_RUTA_ORIGEN
+        FOREIGN KEY (id_almacen_origen)
+        REFERENCES almacen(id_almacen),
+
+    CONSTRAINT FK_RUTA_DESTINO
+        FOREIGN KEY (id_almacen_destino)
+        REFERENCES almacen(id_almacen),
+
+    CONSTRAINT UQ_RUTA
+        UNIQUE(id_almacen_origen, id_almacen_destino)
 );
 
 -- =========================================================
 -- TABLA: PAQUETE_GLOBAL
 -- =========================================================
 
-CREATE TABLE paquete_global (
-    id_paquete INT IDENTITY(1,1) PRIMARY KEY,
+CREATE TABLE PAQUETE_GLOBAL (
+    id_paquete UNIQUEIDENTIFIER PRIMARY KEY,
 
-    codigo_rastreo VARCHAR(50) UNIQUE NOT NULL,
+    codigo_rastreo VARCHAR(30) NOT NULL UNIQUE,
 
-    id_cliente_remitente INT NOT NULL,
-    id_cliente_destinatario INT NOT NULL,
+    id_cliente_remitente UNIQUEIDENTIFIER NOT NULL,
+    id_cliente_destinatario UNIQUEIDENTIFIER NOT NULL,
+
+    id_estado INT NOT NULL,
+
+    id_ruta INT NOT NULL,
+
+    id_almacen_actual INT NOT NULL,
 
     peso DECIMAL(10,2),
+
     volumen DECIMAL(10,2),
+
+    descripcion VARCHAR(300),
 
     prioridad VARCHAR(20),
 
     valor_declarado DECIMAL(12,2),
-    costo_envio DECIMAL(12,2),
+
     seguro DECIMAL(12,2),
 
-    id_estado_actual INT,
-    id_ruta INT,
+    costo_envio DECIMAL(12,2),
 
-    id_almacen_origen INT,
-    id_almacen_destino INT,
-    id_almacen_actual INT,
+    fecha_registro DATETIME NOT NULL DEFAULT GETDATE(),
 
-    nodo_origen VARCHAR(20),
+    CONSTRAINT FK_PG_REMITENTE
+        FOREIGN KEY (id_cliente_remitente)
+        REFERENCES CLIENTE_PUBLICO(id_cliente),
 
-    fecha_registro DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_PG_DESTINATARIO
+        FOREIGN KEY (id_cliente_destinatario)
+        REFERENCES CLIENTE_PUBLICO(id_cliente),
 
-    FOREIGN KEY (id_cliente_remitente)
-        REFERENCES cliente_global(id_cliente),
+    CONSTRAINT FK_PG_ESTADO
+        FOREIGN KEY (id_estado)
+        REFERENCES ESTADO(id_estado),
 
-    FOREIGN KEY (id_cliente_destinatario)
-        REFERENCES cliente_global(id_cliente),
+    CONSTRAINT FK_PG_RUTA
+        FOREIGN KEY (id_ruta)
+        REFERENCES RUTA(id_ruta),
 
-    FOREIGN KEY (id_estado_actual)
-        REFERENCES estado(id_estado),
-
-    FOREIGN KEY (id_ruta)
-        REFERENCES ruta(id_ruta),
-
-    FOREIGN KEY (id_almacen_origen)
-        REFERENCES almacen(id_almacen),
-
-    FOREIGN KEY (id_almacen_destino)
-        REFERENCES almacen(id_almacen),
-
-    FOREIGN KEY (id_almacen_actual)
-        REFERENCES almacen(id_almacen)
+    CONSTRAINT FK_PG_ALMACEN
+        FOREIGN KEY (id_almacen_actual)
+        REFERENCES ALMACEN(id_almacen)
 );
 
 -- =========================================================
 -- TABLA: MOVIMIENTO_GLOBAL
 -- =========================================================
 
-CREATE TABLE movimiento_global (
-    id_movimiento INT IDENTITY(1,1) PRIMARY KEY,
+CREATE TABLE MOVIMIENTO_GLOBAL (
+    id_movimiento UNIQUEIDENTIFIER PRIMARY KEY,
 
-    id_paquete INT NOT NULL,
+    id_paquete UNIQUEIDENTIFIER NOT NULL,
 
-    descripcion VARCHAR(200),
-    ubicacion VARCHAR(100),
+    id_almacen INT NOT NULL,
 
-    fecha_movimiento DATETIME DEFAULT GETDATE(),
+    fecha_movimiento DATETIME NOT NULL DEFAULT GETDATE(),
 
-    nodo_responsable VARCHAR(20),
+    observacion VARCHAR(300),
 
-    FOREIGN KEY (id_paquete)
-        REFERENCES paquete_global(id_paquete)
+    CONSTRAINT FK_MG_PAQUETE
+        FOREIGN KEY (id_paquete)
+        REFERENCES PAQUETE_GLOBAL(id_paquete),
+
+    CONSTRAINT FK_MG_ALMACEN
+        FOREIGN KEY (id_almacen)
+        REFERENCES ALMACEN(id_almacen)
 );
 
 -- =========================================================
@@ -158,21 +217,6 @@ CREATE TABLE log_sincronizacion (
 
     estado VARCHAR(30),
     mensaje VARCHAR(300)
-);
-
-CREATE TABLE cola_pendientes (
-    id_pendiente INT IDENTITY(1,1) PRIMARY KEY,
-
-    nodo_origen VARCHAR(20),
-
-    operacion VARCHAR(50),
-    tabla_afectada VARCHAR(50),
-
-    id_registro INT,
-
-    fecha_registro DATETIME DEFAULT GETDATE(),
-
-    estado VARCHAR(30)
 );
 
 CREATE TABLE transacciones_distribuidas (
