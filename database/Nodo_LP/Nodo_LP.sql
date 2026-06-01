@@ -188,6 +188,6 @@ INSERT INTO estado(nombre) VALUES
 ('Llegó a destino'),
 ('Entregado');
 
-INSERT INTO almacen(nombre, ciudad, direccion, nodo_responsable)
+INSERT INTO almacen(id_almacen,nombre, ciudad, direccion, nodo_responsable)
 VALUES
-('Almacén Central LP', 'La Paz', 'Zona Central', 'LP');
+(1,'Almacén Central LP', 'La Paz', 'Zona Central', 'LP');
