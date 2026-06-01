@@ -178,3 +178,38 @@ def obtener_clientes_local_scz():
         if cur: cur.close()
         if conn: conn.close()
     return clientes
+
+
+def obtener_clientes_local_central():
+    """Consulta la base de datos local del Nodo Central (SQL Server) unificando sus fragmentos verticales"""
+    clientes = []
+    conn = None
+    cur = None
+    try:
+        conn = conectar_central()
+        cur = conn.cursor()
+        # SQL Server: Unificamos la tabla operativa (pública) con la financiera/confidencial (privada)
+        cur.execute("""
+            SELECT pub.id_cliente, pub.nombre, pub.apellido_paterno, pub.apellido_materno, 
+                   pub.telefono, pub.fecha_registro, priv.documento_identidad, priv.direccion, priv.email
+            FROM CLIENTE_PUBLICO pub
+            INNER JOIN CLIENTE_PRIVADO priv ON pub.id_cliente = priv.id_cliente
+        """)
+        filas = cur.fetchall()
+        for fila in filas:
+            fecha_registro = fila[5].strftime('%Y-%m-%d %H:%M:%S') if fila[5] else 'Automático'
+            nombre_completo = " ".join(filter(None, [fila[1], fila[2], fila[3]])).strip()
+
+            clientes.append({
+                "id": str(fila[0]),
+                "nombre": nombre_completo,
+                "documento": fila[6] if fila[6] else 'S/D',
+                "telefono": fila[4] if fila[4] else '—',
+                "correo": fila[8] if fila[8] else '—',
+                "registro": fecha_registro,
+                "direccion": fila[7] if fila[7] else 'S/D'
+            })
+    finally:
+        if cur: cur.close()
+        if conn: conn.close()
+    return clientes
