@@ -5,7 +5,7 @@ print("Conectando a PostgreSQL...")
 try:
     conn = psycopg2.connect(
         host="26.133.137.249",
-        database="lapaz_db",
+        database="nodo_lp",
         user="postgres",
         password="postgres",
         port="5432",
