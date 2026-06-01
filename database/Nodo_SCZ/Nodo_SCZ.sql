@@ -184,12 +184,12 @@ CREATE TABLE cola_pendientes (
 -- DATOS BASE
 -- =========================================================
 
-INSERT INTO estado(nombre) VALUES
-('Registrado'),
-('En almacén'),
-('En tránsito'),
-('Llegó a destino'),
-('Entregado');
+INSERT INTO estado(id_estado, nombre) VALUES
+(1, 'Registrado'),
+(2, 'En almacén'),
+(3, 'En tránsito'),
+(4, 'Llegó a destino'),
+(5, 'Entregado');
 
 INSERT INTO almacen(id_almacen,nombre, ciudad, direccion, nodo_responsable)
 VALUES
