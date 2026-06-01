@@ -9,11 +9,16 @@ from dashboard import construir_dashboard
 from validaciones import validar_codigo
 from paquetes import obtener_todos_paquetes, obtener_paquetes_por_nodo, crear_paquete, obtener_tabla_paquete, obtener_tabla_movimiento, obtener_tabla_paquete_financiero, buscar_paquete
 from paquetes import obtener_paquetes_por_tipo_nodo
-from clientes import obtener_clientes_global
+from clientes import obtener_clientes_global, registrar_cliente_nodo  # <-- Asegúrate de tener o mapear esta función
 from movimientos import registrar_movimiento, obtener_movimientos_paquete, obtener_todos_movimientos, actualizar_estado_movimiento, obtener_historial_completo
 from catalogo import obtener_fragmentos
 from respuestas import respuesta_ok, respuesta_error
 from logs.logger import registrar_log
+
+def respuesta_ok(data): return {"success": True, "data": data}
+def respuesta_error(msg): return {"success": False, "error": msg}
+def registrar_log(msg): print(f"[LOG SYSTEM]: {msg}")
+
 
 # 1. Importamos el Blueprint que contiene todas las rutas y mocks del Coordinador
 from routes.coordinador import coordinador_bp
@@ -106,14 +111,12 @@ def api_paquetes_nodo(nodo):
         return jsonify(respuesta_error(str(e))), 500
 
 
-@app.route('/api/clientes')
-def api_clientes():
-    """Obtiene la tabla global de clientes desde el Nodo Central"""
+@app.route('/api/clientes', methods=['GET'])
+def api_listar_clientes():
     try:
-        clientes = obtener_clientes_global()
-        return jsonify(respuesta_ok(clientes))
+        data = obtener_clientes_global()
+        return jsonify(respuesta_ok(data))
     except Exception as e:
-        registrar_log(f"Error en clientes globales: {e}")
         return jsonify(respuesta_error(str(e))), 500
 
 
@@ -168,19 +171,19 @@ def api_tabla_paquete_financiero(nodo):
     """Obtiene la tabla financiera de paquetes (SCZ)"""
     try:
         datos = obtener_tabla_paquete_financiero(nodo)
-
-
-        @app.route('/api/paquetes/por-tipo/<nodo>')
-        def api_paquetes_por_tipo(nodo):
-            """Obtiene paquetes operativos y financieros de un nodo específico"""
-            try:
-                datos = obtener_paquetes_por_tipo_nodo(nodo)
-                return jsonify(respuesta_ok(datos))
-            except Exception as e:
-                registrar_log(f"Error obteniendo paquetes por tipo del nodo {nodo}: {e}")
-                return jsonify(respuesta_error(str(e))), 500
         return jsonify(respuesta_ok(datos))
     except Exception as e:
+        return jsonify(respuesta_error(str(e))), 500
+
+
+@app.route('/api/paquetes/por-tipo/<nodo>')
+def api_paquetes_por_tipo(nodo):
+    """Obtiene paquetes operativos y financieros de un nodo específico"""
+    try:
+        datos = obtener_paquetes_por_tipo_nodo(nodo)
+        return jsonify(respuesta_ok(datos))
+    except Exception as e:
+        registrar_log(f"Error obteniendo paquetes por tipo del nodo {nodo}: {e}")
         return jsonify(respuesta_error(str(e))), 500
 
 
@@ -208,6 +211,49 @@ def api_crear_paquete():
             return jsonify(respuesta_error("Error al crear el paquete")), 500
     except Exception as e:
         return jsonify(respuesta_error(str(e))), 500
+
+
+# ===================================
+# ENDPOINTS DE NUEVOS CLIENTES (DISTRIBUIDO)
+# ===================================
+
+@app.route('/api/cliente/crear', methods=['POST'])
+def api_crear_cliente():
+    try:
+        data = request.json or {}
+        
+        # Extracción adaptada a los formatos de las tablas
+        documento = data.get('documento_identidad')
+        nombre = data.get('nombre')
+        apellido_paterno = data.get('apellido_paterno')
+        apellido_materno = data.get('apellido_materno')
+        telefono = data.get('telefono')
+        direccion = data.get('direccion')
+        email = data.get('email')
+        nodo_destino = data.get('nodo') # Viene directamente 'nodo_lp' o 'nodo_scz'
+
+        if not documento or not nombre or not apellido_paterno or not nodo_destino:
+            return jsonify({"success": False, "error": "Campos con restricción SQL NOT NULL incompletos"}), 400
+
+        # Ejecutamos la función de inserción cruzada en clientes.py
+        exito = registrar_cliente_nodo(
+            nit_ci=documento,
+            nombre=nombre,
+            apellido_paterno=apellido_paterno,
+            apellido_materno=apellido_materno,
+            telefono=telefono,
+            direccion=direccion,
+            email=email,
+            nodo_destino=nodo_destino
+        )
+        
+        if exito:
+            return jsonify({"success": True, "data": {"mensaje": f"INSERT exitoso en {nodo_destino} y sincronizado a nodo_central"}}), 200
+        else:
+            return jsonify({"success": False, "error": "Error interno al efectuar la transacción distributed"}), 500
+            
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Fallo crítico en el motor: {str(e)}"}), 500
 
 
 # ===================================
@@ -279,26 +325,14 @@ def api_trazabilidad(codigo):
     except Exception as e:
         return jsonify(respuesta_error(str(e))), 500
 
-# -----------------------------------
-# TRAZABILIDAD GLOBAL (Mantenida sin alteraciones)
-# -----------------------------------
 
 @app.route('/trazabilidad/<codigo>')
 def trazabilidad(codigo):
-
     if not validar_codigo(codigo):
-
-        return jsonify({
-            "error": "Código inválido"
-        })
-
+        return jsonify({"error": "Código inválido"})
     resultado = obtener_trazabilidad(codigo)
-
     return jsonify(resultado)
 
-# -----------------------------------
-# OPERACIONES PENDIENTES (Mantenida sin alteraciones)
-# -----------------------------------
 
 @app.route('/api/pendientes')
 def api_pendientes():
@@ -312,12 +346,8 @@ def api_pendientes():
 
 @app.route('/pendientes')
 def pendientes():
-
     return jsonify(obtener_pendientes())
 
-# -----------------------------------
-# ACTUALIZAR ESTADO (Mantenida sin alteraciones)
-# -----------------------------------
 
 @app.route('/api/actualizar_estado', methods=['PUT'])
 def api_actualizar_estado():
@@ -338,59 +368,38 @@ def api_actualizar_estado():
     except Exception as e:
         return jsonify(respuesta_error(str(e))), 500
 
+
 @app.route('/actualizar_estado', methods=['PUT'])
 def cambiar_estado():
-
     data = request.json
-
     codigo = data['codigo']
     estado = data['estado']
-
-    actualizado = actualizar_estado(
-        codigo,
-        estado
-    )
-
+    actualizado = actualizar_estado(codigo, estado)
     if actualizado:
-
-        return jsonify({
-            "mensaje": "Estado actualizado"
-        })
-
-    return jsonify({
-        "error": "No encontrado"
-    })
+        return jsonify({"mensaje": "Estado actualizado"})
+    return jsonify({"error": "No encontrado"})
 
 
 @app.route('/estado_nodos')
 def estado_nodos():
+    return jsonify(obtener_estado_nodos())
 
-    return jsonify(
-        obtener_estado_nodos()
-    )
 
 @app.route('/metricas')
 def metricas():
+    return jsonify(obtener_metricas())
 
-    return jsonify(
-        obtener_metricas()
-    )
 
 @app.route('/dashboard')
 def dashboard():
-    return jsonify(
-        construir_dashboard()
-    )
+    return jsonify(construir_dashboard())
+
 
 @app.route('/fragmentos')
 def fragmentos():
-    return jsonify(
-        obtener_fragmentos()
-    )
+    return jsonify(obtener_fragmentos())
 
-# ------------------------------------------------------------------
-# RUTA CONTROLADORA UNIFICADA PARA SEDES REGIONALES (Dinamismo de UI)
-# ------------------------------------------------------------------
+
 @app.route('/nodo/<ciudad>')
 def inicio_nodo_regional(ciudad):
     token = ciudad.lower().strip().replace('-', '_')
@@ -412,7 +421,6 @@ def inicio_nodo_regional(ciudad):
         
     return render_template('nodo_regional/index.html', nodo=config_nodo)
 
-# -----------------------------------
 
 if __name__ == '__main__':
     app.run(

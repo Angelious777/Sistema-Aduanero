@@ -191,7 +191,7 @@ body {
    4. CONTENIDO PRINCIPAL Y TOPBAR
    ========================================================================== */
 .contenido-principal {
-    margin-left: 280px;
+    /* margin-left: 280px; */
     flex-grow: 1;
     display: flex;
     flex-direction: column;

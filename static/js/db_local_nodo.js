@@ -49,7 +49,7 @@ const datasetSantaCruz = {
         { fecha: "2026-05-31 08:00", paquete: "PKT-SCZ-802", evento: "Clasificación Arancelaria", observacion: "Falta documentación de origen en SQL Server" }
     ],
     clientes_publicos: [
-        { id: 3, nombre: "Ingenio Azucarero Guabirá", documento: "NIT-440291023", telefono: "3922039", correo: "logistica@guabira.com" }
+        // { id: 3, nombre: "Ingenio Azucarero Guabirá", documento: "NIT-440291023", telefono: "3922039", correo: "logistica@guabira.com" }
     ],
     almacenes: [
         { codigo: "ALM-SCZ-01", nombre: "Terminal de Carga Aeropuerto Viru Viru", ubicacion: "Carr. al Norte Km 13", capacidad: "12,000 m³" }

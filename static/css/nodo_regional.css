@@ -193,7 +193,7 @@ body {
     flex-grow: 1;
     padding: 40px;
     overflow-y: auto; /* Permite scroll exclusivo de formularios/tablas */
-    max-width: 1400px;
+    /* max-width: 1400px; */
     width: 100%;
 }
 
