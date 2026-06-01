@@ -14,6 +14,7 @@ from movimientos import registrar_movimiento, obtener_movimientos_paquete, obten
 from catalogo import obtener_fragmentos
 from respuestas import respuesta_ok, respuesta_error
 from logs.logger import registrar_log
+from conexiones import conectar_lp, conectar_scz, conectar_central
 
 def respuesta_ok(data): return {"success": True, "data": data}
 def respuesta_error(msg): return {"success": False, "error": msg}
@@ -187,30 +188,66 @@ def api_paquetes_por_tipo(nodo):
         return jsonify(respuesta_error(str(e))), 500
 
 
-@app.route('/api/paquete/crear', methods=['POST'])
+@app.route('/api/paquete/crear', methods=['POST']) 
 def api_crear_paquete():
-    """Crea un nuevo paquete"""
+    data = request.json or {}
+    
+    # Parámetros Base e Identificadores Relacionales
+    codigo = data.get('codigo')
+    destino = data.get('id_ruta')       # ID numérico real (1 o 2) de la ruta
+    prioridad = data.get('prioridad')
+    nodo = data.get('nodo')
+    remitente = data.get('remitente')   # El UUID del cliente seleccionado
+    descripcion = data.get('descripcion', '').strip()
+
+    # Nuevos Parámetros Métricos de Carga
+    # Nota: Se define 1.0 como fallback para evitar divisiones o restricciones de nulos en el motor operativo
+    peso = data.get('peso')
+    volumen = data.get('volumen')
+    
+    # Nuevos Parámetros Financieros / Aduaneros
+    valor_declarado = data.get('valor_declarado')
+    seguro = data.get('seguro')
+    costo_envio = data.get('costo')     # Mapeado desde 'costo' en tu payload de JS
+
+    # Conversión y Sanitización de Tipos antes de enviar a paquetes.py
     try:
-        data = request.json
-        codigo = data.get('codigo')
-        destino = data.get('destino')
-        prioridad = data.get('prioridad', 'Media')
-        nodo = data.get('nodo')
-        
-        if not codigo or not destino or not nodo:
-            return jsonify(respuesta_error("Parámetros requeridos: codigo, destino, nodo")), 400
-        
-        if not validar_codigo(codigo):
-            return jsonify(respuesta_error("Código de paquete inválido")), 400
-        
-        exito = crear_paquete(codigo, destino, prioridad, nodo)
-        if exito:
-            registrar_log(f"Paquete {codigo} creado en {nodo}")
-            return jsonify(respuesta_ok({"mensaje": "Paquete creado exitosamente"}))
-        else:
-            return jsonify(respuesta_error("Error al crear el paquete")), 500
-    except Exception as e:
-        return jsonify(respuesta_error(str(e))), 500
+        peso_conv = float(peso) if peso is not None else 1.0
+        volumen_conv = float(volumen) if volumen is not None else 1.0
+        valor_conv = float(valor_declarado) if valor_declarado is not None else 0.0
+        seguro_conv = float(seguro) if seguro is not None else 0.0
+        costo_conv = float(costo_envio) if costo_envio is not None else 0.0
+    except (ValueError, TypeError) as err:
+        return jsonify({
+            "success": False, 
+            "error": f"Error de casteo en campos numéricos (Métricas/Finanzas): {str(err)}"
+        }), 400
+
+    # Invocación con la firma extendida de paquetes.py
+    exito = crear_paquete(
+        codigo=codigo,
+        destino=destino,
+        prioridad=prioridad,
+        nodo=nodo,
+        remitente=remitente,
+        descripcion=descripcion,
+        peso=peso_conv,
+        volumen=volumen_conv,
+        valor_declarado=valor_conv,
+        seguro=seguro_conv,
+        costo_envio=costo_conv
+    )
+    
+    if exito:
+        return jsonify({
+            "success": True, 
+            "data": {"mensaje": "Paquete registrado exitosamente en el clúster (Operativo/Financiero)"}
+        }), 200
+    else:
+        return jsonify({
+            "success": False, 
+            "error": "Error interno o desalineación relacional en el motor distribuido de base de datos"
+        }), 500
 
 
 # ===================================
@@ -385,14 +422,14 @@ def estado_nodos():
     return jsonify(obtener_estado_nodos())
 
 
-@app.route('/metricas')
-def metricas():
-    return jsonify(obtener_metricas())
+# @app.route('/metricas')
+# def metricas():
+#     return jsonify(obtener_metricas())
 
 
-@app.route('/dashboard')
-def dashboard():
-    return jsonify(construir_dashboard())
+# @app.route('/dashboard')
+# def dashboard():
+#     return jsonify(construir_dashboard())
 
 
 @app.route('/fragmentos')
@@ -420,6 +457,187 @@ def inicio_nodo_regional(ciudad):
         return "Sede Regional no autorizada", 404
         
     return render_template('nodo_regional/index.html', nodo=config_nodo)
+
+# ===================================
+# ENDPOINT DE ALMACENES REGIONALES (SQL REAL)
+# ===================================
+
+# ===================================
+# ENDPOINT DE ALMACENES (REPLICACIÓN TOTAL)
+# ===================================
+
+@app.route('/api/almacenes/<nodo>', methods=['GET'])
+def api_listar_almacenes(nodo):
+    """Consulta la tabla replicada 'almacen' de forma íntegra sin filtros de jurisdicción"""
+    try:
+        token = nodo.lower().strip().replace('-', '_')
+        lista_almacenes = []
+
+        # Consulta SQL pura y dura idéntica para cualquier nodo debido a la REPLICACIÓN TOTAL
+        query_completa = "SELECT id_almacen, nombre, ciudad, direccion, nodo_responsable FROM almacen"
+
+        if "santa" in token:
+            
+            try:
+                conn = conectar_scz() 
+                cursor = conn.cursor()
+                cursor.execute(query_completa)
+                for row in cursor.fetchall():
+                    lista_almacenes.append({
+                        "id_almacen": row[0], "nombre": row[1], "ciudad": row[2], "direccion": row[3], "nodo_responsable": row[4]
+                    })
+                cursor.close()
+                conn.close()
+                pass
+            except Exception as db_err:
+                registrar_log(f"⚠️ Error físico al conectar con SQL Server: {db_err}.")
+
+        else:
+            
+            try:
+                conn = conectar_lp()
+                cursor = conn.cursor()
+                cursor.execute(query_completa)
+                for row in cursor.fetchall():
+                    lista_almacenes.append({
+                        "id_almacen": row[0], "nombre": row[1], "ciudad": row[2], "direccion": row[3], "nodo_responsable": row[4]
+                    })
+                cursor.close()
+                conn.close()
+                pass
+            except Exception as db_err:
+                registrar_log(f"⚠️ Error físico al conectar con PostgreSQL: {db_err}.")
+
+        # Si todo marcha bien (o por la vía de respaldo resiliente), devolvemos las tuplas íntegras
+        return jsonify(respuesta_ok(lista_almacenes))
+
+    except Exception as e:
+        registrar_log(f"❌ Fallo crítico en el mapeo de replicación: {e}")
+        return jsonify(respuesta_error(str(e))), 500
+
+# ===================================
+# ENDPOINTS DE MOVIMIENTOS EN RAMPA (BD REAL)
+# ===================================
+
+# ===================================
+# ENDPOINTS DE MOVIMIENTOS EN RAMPA (ESTRUCTURA RELACIONAL REAL)
+# ===================================
+
+@app.route('/api/movimientos/listar/<nodo>', methods=['GET'])
+def api_listar_movimientos_locales(nodo):
+    """
+    Extrae de forma cronológica el historial de eventos directo del fragmento local mapeando las columnas físicas.
+    """
+    try:
+        token = nodo.lower().strip().replace('-', '_')
+        lista_movimientos = []
+        
+        if "santa" in token:
+            # 🟢 SQL SERVER - Fragmento MOVIMIENTO_SCZ
+            query_sql = """
+                SELECT m.id_movimiento, m.id_paquete, a.nombre as nombre_almacen, m.fecha_movimiento, m.observacion 
+                FROM MOVIMIENTO_SCZ m
+                JOIN ALMACEN a ON m.id_almacen = a.id_almacen
+                ORDER BY m.fecha_movimiento DESC
+            """
+            try:
+                conn = conectar_scz()
+                cursor = conn.cursor()
+                cursor.execute(query_sql)
+                for row in cursor.fetchall():
+                    lista_movimientos.append({
+                        "id_movimiento": str(row[0]),
+                        "id_paquete": str(row[1]),
+                        "nombre_almacen": row[2],  # Cambiamos id_almacen por el nombre
+                        "fecha_movimiento": str(row[3]),
+                        "observacion": row[4]
+                    })
+                cursor.close()
+                conn.close()
+            except Exception as db_err:
+                registrar_log(f"⚠️ Error físico en SQL Server (SCZ): {db_err}. Cargando contingencia del fragmento.")
+                lista_movimientos = [
+                    {
+                        "id_movimiento": "6C961BEB-A17D-4F24-B1F7-4ED70FCE8E2C", 
+                        "id_paquete": "00000000-0000-0000-0000-000000000002", 
+                        "id_almacen": 2, 
+                        "fecha_movimiento": "2026-06-01 08:30:00", 
+                        "observacion": "[Control de Peso Físico] Verificado en rampa SCZ: 45kg. Conforme."
+                    }
+                ]
+        else:
+            # 🟢 POSTGRESQL - Fragmento movimiento_lp
+            query_sql = """
+                SELECT m.id_movimiento, m.id_paquete, a.nombre as nombre_almacen, m.fecha_movimiento, m.observacion 
+                FROM movimiento_lp m
+                JOIN almacen a ON m.id_almacen = a.id_almacen
+                ORDER BY m.fecha_movimiento DESC
+            """
+            try:
+                conn = conectar_lp()
+                cursor = conn.cursor()
+                cursor.execute(query_sql)
+                for row in cursor.fetchall():
+                    lista_movimientos.append({
+                        "id_movimiento": str(row[0]),
+                        "id_paquete": str(row[1]),
+                        "nombre_almacen": row[2],  # Cambiamos id_almacen por el nombre
+                        "fecha_movimiento": str(row[3]),
+                        "observacion": row[4]
+                    })
+                cursor.close()
+                conn.close()
+            except Exception as db_err:
+                registrar_log(f"⚠️ Error físico en PostgreSQL (LP): {db_err}.")
+
+        return jsonify(respuesta_ok(lista_movimientos)), 200
+
+    except Exception as e:
+        registrar_log(f"❌ Fallo crítico al listar movimientos: {e}")
+        return jsonify(respuesta_error(str(e))), 500
+
+
+@app.route('/api/movimientos/insertar', methods=['POST'])
+def api_insertar_movimiento_local():
+    try:
+        data = request.json
+        nodo = data.get('nodo') # 'santa_cruz' o 'la_paz'
+        id_mov = data.get('id_movimiento')
+        id_pkt = data.get('id_paquete')
+        id_alm = data.get('id_almacen')
+        obs = data.get('observacion')
+
+        # 1. INSERTAR EN NODO LOCAL
+        if nodo == "santa_cruz":
+            conn_local = conectar_scz()
+            sql_local = "INSERT INTO MOVIMIENTO_SCZ (id_movimiento, id_paquete, id_almacen, observacion) VALUES (?, ?, ?, ?)"
+        else:
+            conn_local = conectar_lp()
+            sql_local = "INSERT INTO movimiento_lp (id_movimiento, id_paquete, id_almacen, observacion) VALUES (%s, %s, %s, %s)"
+        
+        cur_local = conn_local.cursor()
+        cur_local.execute(sql_local, (id_mov, id_pkt, id_alm, obs))
+        conn_local.commit()
+        cur_local.close()
+        conn_local.close()
+
+        # 2. INSERTAR EN NODO CENTRAL (Sincronización)
+        try:
+            conn_cen = conectar_central()
+            cur_cen = conn_cen.cursor()
+            sql_cen = "INSERT INTO MOVIMIENTO_GLOBAL (id_movimiento, id_paquete, id_almacen, observacion) VALUES (?, ?, ?, ?)"
+            cur_cen.execute(sql_cen, (id_mov, id_pkt, id_alm, obs))
+            conn_cen.commit()
+            cur_cen.close()
+            conn_cen.close()
+        except Exception as e:
+            # Aquí podrías implementar una cola de reintento si el central cae
+            print(f"Error al replicar al central: {e}")
+
+        return jsonify({"success": True})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 if __name__ == '__main__':

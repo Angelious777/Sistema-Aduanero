@@ -42,11 +42,11 @@ const datasetSantaCruz = {
         esquema: "dbo.PAQUETE_OPERATIVO_SCZ"
     },
     paquetes: [
-        { codigo: "PKT-SCZ-801", destino: "Trinidad", estado: "Registrado", costo: 420.00, remitente: "Agro Oriente", descripcion: "Semillas Certificadas" },
-        { codigo: "PKT-SCZ-802", destino: "Yacuiba", estado: "Retenido", costo: 1150.00, remitente: "Importadora del Sur", descripcion: "Equipos Electrónicos" }
+        // { codigo: "PKT-SCZ-801", destino: "Trinidad", estado: "Registrado", costo: 420.00, remitente: "Agro Oriente", descripcion: "Semillas Certificadas" },
+        // { codigo: "PKT-SCZ-802", destino: "Yacuiba", estado: "Retenido", costo: 1150.00, remitente: "Importadora del Sur", descripcion: "Equipos Electrónicos" }
     ],
     movimientos: [
-        { fecha: "2026-05-31 08:00", paquete: "PKT-SCZ-802", evento: "Clasificación Arancelaria", observacion: "Falta documentación de origen en SQL Server" }
+        // { fecha: "2026-05-31 08:00", paquete: "PKT-SCZ-802", evento: "Clasificación Arancelaria", observacion: "Falta documentación de origen en SQL Server" }
     ],
     clientes_publicos: [
         // { id: 3, nombre: "Ingenio Azucarero Guabirá", documento: "NIT-440291023", telefono: "3922039", correo: "logistica@guabira.com" }

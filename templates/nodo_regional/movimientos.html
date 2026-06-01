@@ -15,9 +15,10 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Fecha Evento</th>
-                        <th>Paquete</th>
-                        <th>Tipo Movimiento / Evento</th>
+                        <th>ID Movimiento (PK)</th>
+                        <th>ID Paquete (FK)</th>
+                        <th>ID Almacén (FK)</th>
+                        <th>Fecha Movimiento</th>
                         <th>Observación de Control</th>
                     </tr>
                 </thead>
@@ -36,27 +37,22 @@
             <div class="modal-body-aduanero">
                 <form id="form-nuevo-movimiento">
                     <div class="form-grupo-modal">
-                        <label>Seleccionar Encomienda en Custodia:</label>
+                        <label>Seleccionar Encomienda (id_paquete - UUID):</label>
                         <select id="mov-form-paquete" required></select>
                     </div>
                     <div class="form-grupo-modal">
-                        <label>Tipo de Movimiento Aduanero:</label>
-                        <select id="mov-form-tipo" required>
-                            <option value="Control de Peso Físico">Control de Peso Físico</option>
-                            <option value="Apertura y Aforo">Apertura y Aforo / Verificación</option>
-                            <option value="Clasificación Arancelaria">Clasificación Arancelaria</option>
-                            <option value="Despacho de Salida">Despacho de Salida</option>
-                        </select>
+                        <label>Almacén Fiscal Responsable (id_almacen - INT):</label>
+                        <select id="mov-form-almacen" required></select>
                     </div>
                     <div class="form-grupo-modal">
-                        <label>Observación Detallada de Rampa:</label>
-                        <textarea id="mov-form-obs" rows="3" required placeholder="Ej. Carga verificada sin novedades arancelarias. Sellos de seguridad intactos..."></textarea>
+                        <label>Observación (Max 300 caracteres):</label>
+                        <textarea id="mov-form-obs" rows="3" maxlength="300" required placeholder="Ej. [Apertura y Aforo] Carga verificada sin novedades arancelarias..."></textarea>
                     </div>
                 </form>
             </div>
             <div class="modal-footer-aduanero">
                 <button type="button" class="btn-secundario" style="background-color: var(--gris-medio); border-color: var(--gris-medio);" onclick="cerrarModalNuevoMovimiento()">Cancelar</button>
-                <button type="button" class="btn-primario" style="background-color: var(--warning); border-color: var(--warning);" onclick="insertarMovimientoLocal()">Guardar</button>
+                <button type="button" class="btn-primario" style="background-color: var(--warning); border-color: var(--warning);" onclick="insertarMovimientoLocal()">Guardar Transacción</button>
             </div>
         </div>
     </div>

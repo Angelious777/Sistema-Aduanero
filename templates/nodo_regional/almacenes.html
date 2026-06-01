@@ -1,11 +1,13 @@
 <section id="almacenes">
     <div class="explicacion-modulo">
-        <strong>Esquema de Almacenamiento Regional Replicado.</strong> Informacion de los galpones y patios de contenedores autorizados para la guarda temporal de mercancias tributables.
+        <strong>Esquema de Almacenamiento Regional Replicado.</strong> Información de los galpones y patios de contenedores autorizados por el Nodo Central para la guarda temporal de mercancías en esta rampa regional.
     </div>
 
-    <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-        <button class="btn-primario" onclick="abrirModalNuevoAlmacen()">+ Registrar Nuevo Almacen Regional</button>
-        <button class="btn-secundario" onclick="listarAlmacenesLocales()">Actualizar</button>
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+        <button class="btn-secundario" onclick="listarAlmacenesLocales()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 5px; vertical-align: middle;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            Sincronizar con Central
+        </button>
     </div>
 
     <div class="contenedor-tabla-panel">
@@ -13,47 +15,15 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Codigo Regional</th>
-                        <th>Nombre del Galpon / Patio</th>
-                        <th>Direccion / Ubicacion</th>
-                        <th>Capacidad Autorizada</th>
+                        <th>ID Almacén (PK)</th>
+                        <th>Nombre del Almacén</th>
+                        <th>Dirección / Ciudad</th>
+                        <th>Nodo Responsable</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-almacenes-local-body">
-                </tbody>
+                    </tbody>
             </table>
-        </div>
-    </div>
-
-    <div id="modal-nuevo-almacen" class="modal-aduanero-overlay">
-        <div class="modal-aduanero-wrapper" style="border-top-color: var(--azul-primario);">
-            <div class="modal-header-aduanero" style="display: flex; align-items: center; gap: 8px;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                <h3>Habilitacion de Almacen - <span id="lbl-almacen-sede">--</span></h3>
-                <button class="btn-cerrar-modal" onclick="cerrarModalNuevoAlmacen()">&times;</button>
-            </div>
-            <div class="modal-body-aduanero">
-                <div class="form-grupo-modal">
-                    <label>Codigo Asignado por Motor:</label>
-                    <input type="text" id="reg-alm-codigo" readonly style="background: var(--gris-claro); font-family: monospace; font-weight: bold; color: var(--azul-medio);">
-                </div>
-                <div class="form-grupo-modal">
-                    <label for="reg-alm-nombre">Nombre del Almacen:</label>
-                    <input type="text" id="reg-alm-nombre" placeholder="Ej. Galpon de Transito B-3, Patio de Contenedores Oriente">
-                </div>
-                <div class="form-grupo-modal">
-                    <label for="reg-alm-ubicacion">Ubicacion / Direccion:</label>
-                    <input type="text" id="reg-alm-ubicacion" placeholder="Ej. Km 12 Carretera al Norte, Zona Franca Patacamaya">
-                </div>
-                <div class="form-grupo-modal">
-                    <label for="reg-alm-capacidad">Capacidad de Guarda (m³ o TEUs):</label>
-                    <input type="text" id="reg-alm-capacidad" placeholder="Ej. 5,000 m³, 350 TEUs">
-                </div>
-            </div>
-            <div class="modal-footer-aduanero">
-                <button type="button" class="btn-primario" onclick="insertarAlmacenLocal()">Confirmar Transaccion</button>
-                <button type="button" class="btn-secundario" onclick="cerrarModalNuevoAlmacen()">Cancelar</button>
-            </div>
         </div>
     </div>
 </section>

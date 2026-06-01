@@ -1,83 +1,53 @@
 /**
- * almacenes_nodo.js - Control de Infraestructura Física Regional
+ * almacenes_nodo.js - Consulta de Infraestructura Física Autorizada desde BD Real
  */
 
 document.addEventListener("DOMContentLoaded", function() {
     listarAlmacenesLocales();
 });
 
-function listarAlmacenesLocales() {
+async function listarAlmacenesLocales() {
     const tbody = document.getElementById("tabla-almacenes-local-body");
     if (!tbody) return;
 
-    tbody.innerHTML = "";
-    
-    // Extraemos la lista de almacenes del dataset reactivo asignado por la URL
-    const almacenes = window.DB_NODO_LOCAL.almacenes;
-
-    almacenes.forEach(alm => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td style="font-family: monospace; font-weight: bold; color: var(--azul-medio);">${alm.codigo}</td>
-            <td style="font-weight: 600;">${alm.nombre}</td>
-            <td>${alm.ubicacion}</td>
-            <td><strong style="color: var(--gris-oscuro);">${alm.capacidad}</strong></td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// --- LOGÍSTICA DE REGISTRO EN MOTORES DISTRIBUIDOS ---
-function abrirModalNuevoAlmacen() {
-    const modal = document.getElementById("modal-nuevo-almacen");
-    const prefijoSede = window.CONFIG_NODO_ACTIVO.id === "NODO_SANTA_CRUZ" ? "SCZ" : "LP";
-    
-    // Generador Disjunto de Llave Primaria (Ej. ALM-LP-03)
-    // Toma el total actual de almacenes + 1 para mantener un consecutivo limpio
-    const correlativo = window.DB_NODO_LOCAL.almacenes.length + 1;
-    const codigoGenerado = `ALM-${prefijoSede}-0${correlativo}`;
-
-    document.getElementById("lbl-almacen-sede").textContent = window.CONFIG_NODO_ACTIVO.nombre;
-    document.getElementById("reg-alm-codigo").value = codigoGenerated = codigoGenerado;
-    
-    // Limpieza de inputs
-    document.getElementById("reg-alm-nombre").value = "";
-    document.getElementById("reg-alm-ubicacion").value = "";
-    document.getElementById("reg-alm-capacidad").value = "";
-
-    modal.classList.add("modal-active");
-}
-
-function cerrarModalNuevoAlmacen() {
-    document.getElementById("modal-nuevo-almacen").classList.remove("modal-active");
-}
-
-function insertarAlmacenLocal() {
-    const codigo = document.getElementById("reg-alm-codigo").value;
-    const nombre = document.getElementById("reg-alm-nombre").value.trim();
-    const ubicacion = document.getElementById("reg-alm-ubicacion").value.trim();
-    const capacidad = document.getElementById("reg-alm-capacidad").value.trim();
-
-    if (!nombre || !ubicacion || !capacidad) {
-        alert("[ERROR DE VALIDACION] Todos los campos de infraestructura son obligatorios para autorizar un almacen.");
+    const nodoId = window.CONFIG_NODO_ACTIVO ? window.CONFIG_NODO_ACTIVO.id : null;
+    if (!nodoId) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Error: No se pudo verificar la identidad de la rampa regional.</td></tr>`;
         return;
     }
 
-    // Inyección en la partición de la base de datos activa
-    const nuevoAlmacen = {
-        codigo: codigo,
-        nombre: nombre,
-        ubicacion: ubicacion,
-        capacidad: capacidad
-    };
+    const nodoParam = nodoId === "NODO_SANTA_CRUZ" ? "santa_cruz" : "la_paz";
 
-    window.DB_NODO_LOCAL.almacenes.push(nuevoAlmacen);
-    
-    // Alerta que demuestra el dinamismo de la base de datos heterogénea en tu defensa académica
-    const motorBD = window.DB_NODO_LOCAL.infraestructura.motor_bd;
-    const tablaDestino = window.DB_NODO_LOCAL.infraestructura.esquema;
-    alert(`[TRANSACCIÓN EXITOSA]\nAlmacen persistido localmente en: ${motorBD}\nDestino de Red: ${tablaDestino}\nCodigo Habilitado: ${codigo}`);
-        
-    cerrarModalNuevoAlmacen();
-    listarAlmacenesLocales();
+    try {
+        const response = await fetch(`/api/almacenes/${nodoParam}`);
+        const resultado = await response.json();
+
+        if (!resultado.success) {
+            throw new Error(resultado.error || "Error al leer la base de datos distribuida");
+        }
+
+        const almacenes = resultado.data || [];
+        tbody.innerHTML = "";
+
+        if (almacenes.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: var(--gris-oscuro);">No se encontraron registros en la tabla 'almacen' para este nodo.</td></tr>`;
+            return;
+        }
+
+        // Mapeo directo de las columnas SQL reales extraídas por el driver del backend
+        almacenes.forEach(alm => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td style="font-family: monospace; font-weight: bold; color: var(--azul-medio);">ID-${alm.id_almacen}</td>
+                <td style="font-weight: 600; color: var(--azul-oscuro);">${alm.nombre}</td>
+                <td>${alm.direccion} (${alm.ciudad})</td>
+                <td><strong style="color: var(--verde-exito);">${alm.nodo_responsable}</strong></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (error) {
+        console.error("❌ Error al sincronizar almacenes con la BD:", error);
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Fallo de conexión con la tabla 'almacen': ${error.message}</td></tr>`;
+    }
 }

@@ -133,16 +133,31 @@ async function despacharRegistroClienteCoordinador() {
         return;
     }
 
+    // === DETECCIÓN NORMALIZADA DE NODO REGIONAL ===
     const path = window.location.pathname.toLowerCase();
     let nodoDestino = "";
-    if (path.includes("la_paz") || path.includes("lp")) {
+
+    // Reemplazamos guiones medios por guiones bajos para estandarizar la búsqueda
+    const pathNormalizado = path.replace(/-/g, "_");
+
+    if (pathNormalizado.includes("la_paz") || pathNormalizado.includes("lp")) {
         nodoDestino = "nodo_lp";
-    } else if (path.includes("santa_cruz") || path.includes("scz")) {
+    } else if (pathNormalizado.includes("santa_cruz") || pathNormalizado.includes("scz")) {
         nodoDestino = "nodo_scz";
     } else {
-        alert("❌ Error: No se puede mapear la base de datos regional. La URL debe contener 'la_paz' o 'santa_cruz'.");
-        return;
+        // Fallback por si usan el Badge visual del sistema
+        const badgeTexto = document.querySelector(".badge-nodo")?.textContent.toLowerCase() || "";
+        if (badgeTexto.includes("scz") || badgeTexto.includes("cruz")) {
+            nodoDestino = "nodo_scz";
+        } else if (badgeTexto.includes("lp") || badgeTexto.includes("paz")) {
+            nodoDestino = "nodo_lp";
+        } else {
+            console.error(`Detección fallida. Path original: "${path}"`);
+            alert(`❌ Error de Enrutamiento Regional:\nNo se pudo deducir el nodo desde la URL ("${path}").`);
+            return;
+        }
     }
+    console.log(`--> Nodo asignado con éxito: ${nodoDestino}`);
 
     const payload = {
         documento_identidad: documento,

@@ -3,17 +3,17 @@
         <strong>Control Logístico de Carga Terrestre / Aérea (Fragmento Operativo Local).</strong> Monitoreo de encomiendas asignadas a esta zona de rampa aduanera.
     </div>
 
-    <!-- TABLA DE PAQUETES OPERATIVOS -->
     <div style="background: var(--blanco); padding: 16px; border: 1px solid var(--borde); border-radius: 8px; margin-bottom: 20px;">
         <h3 style="margin-bottom: 16px; color: var(--azul-primario); display: flex; align-items: center; gap: 8px;">
-            <span>📦 PAQUETES OPERATIVOS</span>
+            <span>📦 CENTRAL DE CONTROL DE CARGA (OPERATIVA Y FINANCIERA)</span>
         </h3>
         <div style="display: flex; justify-content: space-between; margin-bottom: 16px; gap: 12px;">
             <button class="btn-primario" onclick="abrirModalNuevoPaquete()">+ Registrar Nuevo Paquete</button>
-            <button class="btn-secundario" onclick="cargarPaquetesPorTipo()">Actualizar</button>
+            <button class="btn-secundario" onclick="cargarPaquetesPorTipo()">Actualizar Ambas Tablas</button>
         </div>
     </div>
 
+    <h4 style="margin: 20px 0 10px 0; color: var(--azul-primario); font-weight: bold;">📦 Fragmento Operativo</h4>
     <div class="contenedor-tabla-panel" style="margin-bottom: 40px;">
         <div class="responsive-table">
             <table>
@@ -33,14 +33,10 @@
         </div>
     </div>
 
-    <!-- TABLA DE PAQUETES FINANCIEROS -->
-    <div style="background: var(--blanco); padding: 16px; border: 1px solid var(--borde); border-radius: 8px; margin-bottom: 20px;">
-        <h3 style="margin-bottom: 16px; color: var(--verde-exito); display: flex; align-items: center; gap: 8px;">
-            <span>💰 PAQUETES FINANCIEROS</span>
+    <div style="background: var(--blanco); padding: 12px 16px; border-left: 4px solid var(--verde-exito); margin-bottom: 16px;">
+        <h3 style="margin: 0; color: var(--verde-exito); display: flex; align-items: center; gap: 8px;">
+            <span>💰 PAQUETES FINANCIEROS (Fragmento Vertical)</span>
         </h3>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 16px; gap: 12px;">
-            <button class="btn-primario" onclick="cargarPaquetesPorTipo()">Actualizar</button>
-        </div>
     </div>
 
     <div class="contenedor-tabla-panel">
@@ -48,10 +44,10 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID Paquete</th>
+                        <th>ID Paquete (UUID)</th>
                         <th>Costo (Bs)</th>
                         <th>Seguro (Bs)</th>
-                        <th>Impuesto (Bs)</th>
+                        <th>Impuesto / V.D. (Bs)</th>
                         <th style="text-align: center;">Acciones</th>
                     </tr>
                 </thead>
@@ -62,12 +58,11 @@
         </div>
     </div>
 
-    <!-- MODALES -->
     <div id="modal-nuevo-paquete" class="modal-aduanero-overlay">
-        <div class="modal-aduanero-wrapper" style="border-top-color: var(--verde-exito, #10b981);">
+        <div class="modal-aduanero-wrapper" style="border-top-color: var(--verde-exito, #10b981); max-width: 600px;">
             <div class="modal-header-aduanero">
                 <h3 style="display: inline-flex; align-items: center; gap: 8px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                         <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
                         <line x1="12" y1="22.08" x2="12" y2="12"></line>
@@ -77,26 +72,70 @@
                 <button class="btn-cerrar-modal" onclick="cerrarModalNuevoPaquete()">&times;</button>
             </div>
             <div class="modal-body-aduanero">
-                <div class="form-grupo-modal">
-                    <label>Código Asignado por Motor:</label>
-                    <input type="text" id="reg-pkt-codigo" readonly style="background: var(--gris-claro); font-family: monospace; font-weight: bold; color: var(--azul-medio);">
-                </div>
-                <div class="form-grupo-modal">
-                    <label for="reg-pkt-destino">Destino Final:</label>
-                    <input type="text" id="reg-pkt-destino" placeholder="Ej. Cochabamba, Trinidad, Yacuiba...">
-                </div>
-                <div class="form-grupo-modal">
-                    <label for="reg-pkt-costo">Costo de Despacho (Bs):</label>
-                    <input type="number" id="reg-pkt-costo" step="0.01" placeholder="0.00">
-                </div>
-                <div class="form-grupo-modal">
-                    <label for="reg-pkt-remitente">Remitente / Consignatario:</label>
-                    <input type="text" id="reg-pkt-remitente" placeholder="Razón Social o Nombre Completo">
-                </div>
-                <div class="form-grupo-modal">
-                    <label for="reg-pkt-desc">Descripción General del Contenido:</label>
-                    <textarea id="reg-pkt-desc" rows="3" placeholder="Detalle de mercadería o documentación..."></textarea>
-                </div>
+                <form id="form-registro-paquete" onsubmit="event.preventDefault();">
+                    
+                    <div class="form-grupo-modal">
+                        <label>Código Asignado por Motor:</label>
+                        <input type="text" id="reg-pkt-codigo" readonly style="background: var(--gris-claro); font-family: monospace; font-weight: bold; color: var(--azul-medio);">
+                    </div>
+
+                    <div class="form-grupo-modal">
+                        <label for="reg-pkt-remitente">Remitente / Consignatario <span style="color:red;">*</span>:</label>
+                        <select id="reg-pkt-remitente" required style="width: 100%;">
+                            <option value="">🔄 Cargando catálogo unificado de clientes...</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-grupo-modal" style="flex: 1; margin-bottom: 0;">
+                            <label for="reg-pkt-destino">Destino Final / Ruta <span style="color:red;">*</span>:</label>
+                            <select id="reg-pkt-destino" required style="width: 100%;">
+                                <option value="">🔄 Cargando rutas...</option>
+                            </select>
+                        </div>
+                        <div class="form-grupo-modal" style="flex: 1; margin-bottom: 0;">
+                            <label for="reg-pkt-prioridad">Prioridad de Despacho:</label>
+                            <select id="reg-pkt-prioridad" style="width: 100%;">
+                                <option value="Baja">Baja</option>
+                                <option value="Media" selected>Media</option>
+                                <option value="Alta">Alta</option>
+                                <option value="Urgente">Urgente</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-grupo-modal" style="flex: 1; margin-bottom: 0;">
+                            <label for="reg-pkt-peso">Peso de Carga (Kg):</label>
+                            <input type="number" id="reg-pkt-peso" step="0.01" min="0.01" value="1.00" style="width: 100%;">
+                        </div>
+                        <div class="form-grupo-modal" style="flex: 1; margin-bottom: 0;">
+                            <label for="reg-pkt-volumen">Volumen (m³):</label>
+                            <input type="number" id="reg-pkt-volumen" step="0.01" min="0.01" value="1.00" style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-grupo-modal" style="flex: 1; margin-bottom: 0;">
+                            <label for="reg-pkt-valor-declarado">Valor Declarado (Bs):</label>
+                            <input type="number" id="reg-pkt-valor-declarado" step="0.01" min="0.00" value="0.00" style="width: 100%;">
+                        </div>
+                        <div class="form-grupo-modal" style="flex: 1; margin-bottom: 0;">
+                            <label for="reg-pkt-seguro">Seguro de Carga (Bs):</label>
+                            <input type="number" id="reg-pkt-seguro" step="0.01" min="0.00" value="0.00" style="width: 100%;">
+                        </div>
+                    </div>
+
+                    <div class="form-grupo-modal">
+                        <label for="reg-pkt-costo">Costo de Despacho (Bs):</label>
+                        <input type="number" id="reg-pkt-costo" step="0.01" min="0.00" value="0.00" style="width: 100%;">
+                    </div>
+
+                    <div class="form-grupo-modal">
+                        <label for="reg-pkt-desc">Descripción General del Contenido:</label>
+                        <textarea id="reg-pkt-desc" rows="2" placeholder="Detalle de mercadería o documentación..."></textarea>
+                    </div>
+                </form>
             </div>
             <div class="modal-footer-aduanero">
                 <button type="button" class="btn-primario" style="background-color: #10b981; border-color: #10b981;" onclick="insertarPaqueteLocal()">Confirmar Transacción</button>
@@ -108,31 +147,23 @@
     <div id="modal-detalle-paquete" class="modal-aduanero-overlay">
         <div class="modal-aduanero-wrapper">
             <div class="modal-header-aduanero">
-                <h3 style="display: inline-flex; align-items: center; gap: 8px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                    </svg>
-                    <span>Ficha Logística Local: <span id="dt-pkt-codigo" style="font-family: monospace;"></span></span>
-                </h3>
+                <h3>📋 Ficha Logística Local: <span id="dt-pkt-codigo" style="font-family: monospace;"></span></h3>
                 <button class="btn-cerrar-modal" onclick="cerrarModalDetallePaquete()">&times;</button>
             </div>
             <div class="modal-body-aduanero">
                 <div style="background: var(--gris-claro); padding: 14px; border-radius: 6px; margin-bottom: 16px; font-size: 0.9rem; line-height: 1.6;">
                     <p><strong>Destino Asignado:</strong> <span id="dt-pkt-destino">--</span></p>
-                    <p><strong>Costo Registrado:</strong> <span id="dt-pkt-costo">--</span> Bs.</p>
-                    <p><strong>Remitente Asociado:</strong> <span id="dt-pkt-remitente">--</span></p>
+                    <p><strong>Prioridad Logística:</strong> <span id="dt-pkt-prioridad-txt">--</span></p>
+                    <p><strong>Estado en Clúster:</strong> <span id="dt-pkt-estado-txt">--</span></p>
                     <p><strong>Descripción de Carga:</strong> <span id="dt-pkt-desc">--</span></p>
                 </div>
-                
                 <div class="form-grupo-modal" style="border-top: 1px solid var(--borde); padding-top: 14px;">
                     <label for="dt-pkt-select-estado"><strong>Actualizar Estado en Rampa:</strong></label>
                     <select id="dt-pkt-select-estado" style="margin-top: 6px;">
-                        <option value="Registrado">Registrado</option>
-                        <option value="En Tránsito">En Tránsito</option>
-                        <option value="Retenido por Aduana">Retenido por Aduana</option>
-                        <option value="Entregado">Entregado</option>
+                        <option value="1">Registrado</option>
+                        <option value="2">En Tránsito</option>
+                        <option value="3">Retenido por Aduana</option>
+                        <option value="4">Entregado</option>
                     </select>
                 </div>
             </div>

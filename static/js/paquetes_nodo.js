@@ -1,22 +1,35 @@
 /**
- * paquetes_nodo.js - Gestión de Transacciones de Carga Locales
+ * paquetes_nodo.js - Gestión de Transacciones de Carga Locales de acuerdo al API Flask
  */
 
 document.addEventListener("DOMContentLoaded", function() {
-    listarPaquetesLocales();
+    if (!window.CONFIG_NODO_ACTIVO) {
+        window.CONFIG_NODO_ACTIVO = { id: "la_paz", nombre: "Sede Occidental (La Paz)" };
+    }
+    cargarPaquetesPorTipo();
 });
 
-function listarPaquetesLocales() {
+// =========================================================
+// RENDERIZADO ASÍNCRONO DE LAS TABLAS DEL NODO DESDE EL API
+// =========================================================
 async function cargarPaquetesPorTipo() {
-    const nodoId = window.CONFIG_NODO_ACTIVO.id;
-    const nodoNombre = window.CONFIG_NODO_ACTIVO.nombre;
+    const pathNormalizado = window.location.pathname.toLowerCase().replace(/-/g, "_");
+    let nodoId = "";
+    
+    if (pathNormalizado.includes("la_paz") || pathNormalizado.includes("lp")) {
+        nodoId = "la_paz";
+    } else if (pathNormalizado.includes("santa_cruz") || pathNormalizado.includes("scz")) {
+        nodoId = "santa_cruz";
+    } else {
+        nodoId = window.CONFIG_NODO_ACTIVO.id.toLowerCase().includes("santa") ? "santa_cruz" : "la_paz";
+    }
 
     try {
         const response = await fetch(`/api/paquetes/por-tipo/${nodoId}`);
         const resultado = await response.json();
 
         if (!response.ok || resultado.success === false) {
-            console.error("Error al cargar paquetes:", resultado.error);
+            console.error("❌ Error al cargar paquetes del clúster:", resultado.error);
             return;
         }
 
@@ -24,7 +37,7 @@ async function cargarPaquetesPorTipo() {
         mostrarPaquetesOperativos();
         mostrarPaquetesFinancieros();
     } catch (error) {
-        console.error("Error en cargarPaquetesPorTipo:", error);
+        console.error("❌ Error de red en cargarPaquetesPorTipo:", error);
     }
 }
 
@@ -36,7 +49,7 @@ function mostrarPaquetesOperativos() {
     const paquetes = (window.PAQUETES_NODO && window.PAQUETES_NODO.operativos) || [];
 
     if (paquetes.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5">No hay paquetes operativos registrados.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay paquetes operativos registrados en este nodo.</td></tr>`;
         return;
     }
 
@@ -44,11 +57,11 @@ function mostrarPaquetesOperativos() {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td style="font-family: monospace; font-weight: bold;">${pkt.codigo_rastreo || pkt.codigo || '--'}</td>
-            <td>${pkt.destino || '--'}</td>
-            <td>${pkt.estado || '--'}</td>
-            <td>${(pkt.prioridad || pkt.peso || '--')}</td>
+            <td><span style="background:#f1f5f9; padding:2px 6px; border-radius:4px;">Ruta ${pkt.id_ruta || '--'}</span></td>
+            <td><span class="badge status-proceso">${pkt.estado || 'Registrado'}</span></td>
+            <td><small>${pkt.prioridad || 'Media'}</small></td>
             <td style="text-align: center;">
-                <button class="btn-secundario" style="padding: 4px 10px; font-size: 0.8rem;" onclick="alert('Detalle: ${JSON.stringify(pkt).replace(/'/g, "\\'")}')">Ver</button>
+                <button class="btn-secundario" style="padding: 4px 10px; font-size: 0.8rem;" onclick="verDetallePaquete('${pkt.codigo_rastreo || pkt.codigo}')">Examinar</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -63,84 +76,80 @@ function mostrarPaquetesFinancieros() {
     const paquetes = (window.PAQUETES_NODO && window.PAQUETES_NODO.financieros) || [];
 
     if (paquetes.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5">No hay paquetes financieros registrados.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay registros financieros devueltos por el fragmento vertical.</td></tr>`;
         return;
     }
 
     paquetes.forEach(pkt => {
+        const costo = parseFloat(pkt.costo_envio) || 0.0;
+        const seguro = parseFloat(pkt.seguro) || 0.0;
+        const valorDeclarado = parseFloat(pkt.valor_declarado) || 0.0;
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
-            <td style="font-family: monospace; font-weight: bold;">${pkt.codigo_rastreo || pkt.id_paquete || '--'}</td>
-            <td>${(pkt.costo || 0).toFixed(2)} Bs</td>
-            <td>${(pkt.seguro || 0).toFixed(2)} Bs</td>
-            <td>${(pkt.impuesto || 0).toFixed(2)} Bs</td>
+            <td style="font-family: monospace; font-weight: bold; font-size:11px;">${pkt.id_paquete || '--'}</td>
+            <td><strong>${costo.toFixed(2)} Bs</strong></td>
+            <td>${seguro.toFixed(2)} Bs</td>
+            <td>${valorDeclarado.toFixed(2)} Bs</td>
             <td style="text-align: center;">
-                <button class="btn-secundario" style="padding: 4px 10px; font-size: 0.8rem;" onclick="alert('Detalle: ${JSON.stringify(pkt).replace(/'/g, "\\'")}')">Ver</button>
+                <button class="btn-secundario" style="padding: 4px 10px; font-size: 0.8rem;" onclick="alert('Auditoría ID: ${pkt.id_paquete}')">Ver</button>
             </td>
         `;
         tbody.appendChild(tr);
     });
 }
 
-document.addEventListener("DOMContentLoaded", function() {
-    cargarPaquetesPorTipo();
-});
+// =========================================================
+// CARGA REAL DE FKs ASOCIADAS A CLIENTES Y RUTAS DEL CLUSTER
+// =========================================================
+async function cargarComboboxModal() {
+    try {
+        const resClientes = await fetch('/api/clientes').then(r => r.json());
 
-function listarPaquetesLocales() {
-    const tbody = document.getElementById("tabla-paquetes-local-body");
-    if (!tbody) return;
+        const selectRemitente = document.getElementById("reg-pkt-remitente");
+        if (selectRemitente && resClientes.success) {
+            let options = '<option value="">-- Seleccione Cliente Consignatario --</option>';
+            resClientes.data.forEach(c => {
+                options += `<option value="${c.id}">${c.nombre} (Doc: ${c.documento || 'S/D'})</option>`;
+            });
+            selectRemitente.innerHTML = options;
+        }
 
-    tbody.innerHTML = "";
-    
-    // Obtenemos los paquetes del dataset cargado reactivamente (La Paz o Santa Cruz)
-    const paquetes = window.DB_NODO_LOCAL.paquetes;
-
-    paquetes.forEach(pkt => {
-        const tr = document.createElement("tr");
-        
-        // Formateo de Badge de Estado
-        let badgeClass = "status-pendiente";
-        if (pkt.estado === "En Tránsito") badgeClass = "status-proceso";
-        if (pkt.estado === "Entregado") badgeClass = "status-completado";
-        if (pkt.estado === "Retenido" || pkt.estado === "Retenido por Aduana") badgeClass = "status-cancelado";
-
-        tr.innerHTML = `
-            <td style="font-family: monospace; font-weight: bold;">${pkt.codigo}</td>
-            <td>${pkt.destino}</td>
-            <td><span class="badge ${badgeClass}">${pkt.estado}</span></td>
-            <td>${parseFloat(pkt.costo).toFixed(2)}</td>
-            <td style="text-align: center;">
-                <button class="btn-secundario" style="padding: 4px 10px; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;" onclick="verDetallePaquete('${pkt.codigo}')">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M6 22h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.5l-2-3H6a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2z"></path>
-                        <path d="M2 10h20"></path>
-                    </svg>
-                    Examinar
-                </button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
+        const selectDestino = document.getElementById("reg-pkt-destino");
+        if (selectDestino) {
+            let options = '<option value="">-- Seleccione Ruta de Tránsito Habilitada --</option>';
+            const tusRutasReales = [
+                { id: 1, descripcion: "Ruta 1: Almacén Central LP ➔ Almacén Central SCZ (Envío Terrestre)" },
+                { id: 2, descripcion: "Ruta 2: Almacén Central SCZ ➔ Almacén Central LP (Retorno Terrestre)" }
+            ];
+            tusRutasReales.forEach(ruta => {
+                options += `<option value="${ruta.id}">${ruta.descripcion}</option>`;
+            });
+            selectDestino.innerHTML = options;
+        }
+    } catch (err) {
+        console.error("❌ Error inyectando llaves foráneas reales a la interfaz:", err);
+    }
 }
 
-// --- LOGÍSTICA DE REGISTRO CON DISTRIBUCIÓN DE LLAVES ---
+// =========================================================
+// APERTURA DE MODAL Y GENERACIÓN DISJUNTA DE LLAVES
+// =========================================================
 function abrirModalNuevoPaquete() {
     const modal = document.getElementById("modal-nuevo-paquete");
-    const prefijoSede = window.CONFIG_NODO_ACTIVO.id === "NODO_SANTA_CRUZ" ? "SCZ" : "LP";
+    const pathNormalizado = window.location.pathname.toLowerCase().replace(/-/g, "_");
+    const prefijoSede = (pathNormalizado.includes("santa_cruz") || pathNormalizado.includes("scz")) ? "SCZ" : "LP";
     
-    // Generador Disjunto: Evita colisión de llaves primarias en arquitecturas concurrentes
-    const idUnico = Math.floor(100 + Math.random() * 900); 
+    const idUnico = Math.floor(1000 + Math.random() * 9000); 
     const codigoGenerado = `PKT-${prefijoSede}-${idUnico}`;
 
-    document.getElementById("lbl-prefijo-sede").textContent = window.CONFIG_NODO_ACTIVO.nombre;
+    document.getElementById("lbl-prefijo-sede").textContent = prefijoSede === "SCZ" ? "Sede Oriental (Santa Cruz)" : "Sede Occidental (La Paz)";
     document.getElementById("reg-pkt-codigo").value = codigoGenerado;
     
-    // Limpieza de campos de captura
-    document.getElementById("reg-pkt-destino").value = "";
-    document.getElementById("reg-pkt-costo").value = "";
-    document.getElementById("reg-pkt-remitente").value = "";
-    document.getElementById("reg-pkt-desc").value = "";
+    document.getElementById("form-registro-paquete").reset();
+    document.getElementById("reg-pkt-codigo").value = codigoGenerado;
 
+    cargarComboboxModal();
     modal.classList.add("modal-active");
 }
 
@@ -148,68 +157,83 @@ function cerrarModalNuevoPaquete() {
     document.getElementById("modal-nuevo-paquete").classList.remove("modal-active");
 }
 
-function insertarPaqueteLocal() {
+// =========================================================
+// TRANSMISIÓN POST AL COORDINADOR FLASK CON TODOS LOS CAMPOS
+// =========================================================
+async function insertarPaqueteLocal() {
     const codigo = document.getElementById("reg-pkt-codigo").value;
-    const destino = document.getElementById("reg-pkt-destino").value.trim();
-    const costo = parseFloat(document.getElementById("reg-pkt-costo").value) || 0.00;
-    const remitente = document.getElementById("reg-pkt-remitente").value.trim();
+    const idRutaSeleccionada = document.getElementById("reg-pkt-destino").value;
+    const prioridad = document.getElementById("reg-pkt-prioridad").value;
+    const remitente = document.getElementById("reg-pkt-remitente").value;
     const descripcion = document.getElementById("reg-pkt-desc").value.trim();
+    
+    const costo = document.getElementById("reg-pkt-costo").value;
+    const peso = document.getElementById("reg-pkt-peso").value;
+    const volumen = document.getElementById("reg-pkt-volumen").value;
+    const valorDeclarado = document.getElementById("reg-pkt-valor-declarado").value;
+    const seguro = document.getElementById("reg-pkt-seguro").value;
 
-    if (!destino || !remitente) {
-        alert("⚠️ Error de Validación: Los campos 'Destino Final' y 'Remitente' son obligatorios para guardar la transacción.");
+    if (!idRutaSeleccionada || !remitente) {
+        alert("⚠️ Validación SQL: 'Ruta de Tránsito' y 'Remitente' actúan como restricciones relacionales obligatorias.");
         return;
     }
 
-    // Inserción en la memoria volátil del Nodo activo (Simulación de commit a BD local)
-    const nuevoPaquete = {
+    const pathNormalizado = window.location.pathname.toLowerCase().replace(/-/g, "_");
+    const nodoDestino = (pathNormalizado.includes("santa_cruz") || pathNormalizado.includes("scz")) ? "santa_cruz" : "la_paz";
+
+    const payload = {
         codigo: codigo,
-        destino: destino,
-        estado: "Registrado",
-        costo: costo,
+        id_ruta: parseInt(idRutaSeleccionada), 
+        prioridad: prioridad,
+        nodo: nodoDestino,
         remitente: remitente,
-        descripcion: descripcion
+        descripcion: descripcion,
+        costo: parseFloat(costo) || 0.0,
+        peso: parseFloat(peso) || 1.0,
+        volumen: parseFloat(volumen) || 1.0,
+        valor_declarado: parseFloat(valorDeclarado) || 0.0,
+        seguro: parseFloat(seguro) || 0.0
     };
 
-    window.DB_NODO_LOCAL.paquetes.unshift(nuevoPaquete);
-    
-    // Alerta descriptiva con el motor correspondiente para tu presentación de tesis/defensa
-    const motorActivo = window.DB_NODO_LOCAL.infraestructura.motor_bd;
-    alert(`🎉 [COMMIT EXITOSO]\nRegistro inyectado de forma aislada en: ${motorActivo}\nID Guardado: ${codigo}`);
-    
-    cerrarModalNuevoPaquete();
-    listarPaquetesLocales();
+    try {
+        const response = await fetch('/api/paquete/crear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const resultado = await response.json();
+
+        if (response.ok && resultado.success) {
+            alert(`🎉 [COMMIT EN CENTRAL Y LOCAL]\n${resultado.data.mensaje}\nCódigo Tracking: ${codigo}`);
+            cerrarModalNuevoPaquete();
+            cargarPaquetesPorTipo(); 
+        } else {
+            alert(`❌ Error devuelto por el Motor:\n${resultado.error}`);
+        }
+    } catch (error) {
+        alert(`❌ Error de comunicación con el clúster: ${error.message}`);
+    }
 }
 
-// --- LOGÍSTICA DE REVISIÓN Y CAMBIO DE ESTADO ---
-let codigoPaqueteSeleccionado = "";
-
+// =========================================================
+// REVISIÓN LOCAL DE LOGÍSTICA DE DETALLES
+// =========================================================
 function verDetallePaquete(codigo) {
-    const pkt = window.DB_NODO_LOCAL.paquetes.find(p => p.codigo === codigo);
+    const paquetes = (window.PAQUETES_NODO && window.PAQUETES_NODO.operativos) || [];
+    const pkt = paquetes.find(p => (p.codigo_rastreo === codigo || p.codigo === codigo));
+    
     if (!pkt) return;
 
-    codigoPaqueteSeleccionado = codigo;
-    document.getElementById("dt-pkt-codigo").textContent = pkt.codigo;
-    document.getElementById("dt-pkt-destino").textContent = pkt.destino;
-    document.getElementById("dt-pkt-costo").textContent = parseFloat(pkt.costo).toFixed(2);
-    document.getElementById("dt-pkt-remitente").textContent = pkt.remitente;
-    document.getElementById("dt-pkt-desc").textContent = pkt.descripcion || "Sin especificaciones.";
-    document.getElementById("dt-pkt-select-estado").value = pkt.estado;
+    document.getElementById("dt-pkt-codigo").textContent = pkt.codigo_rastreo || pkt.codigo;
+    document.getElementById("dt-pkt-destino").textContent = `Ruta Alterna / Código Interno: ${pkt.id_ruta || 1}`;
+    document.getElementById("dt-pkt-prioridad-txt").textContent = pkt.prioridad || "Media";
+    document.getElementById("dt-pkt-estado-txt").textContent = pkt.estado || "Registrado";
+    document.getElementById("dt-pkt-desc").textContent = pkt.descripcion || "Sin descripción física del contenido.";
 
     document.getElementById("modal-detalle-paquete").classList.add("modal-active");
 }
 
 function cerrarModalDetallePaquete() {
     document.getElementById("modal-detalle-paquete").classList.remove("modal-active");
-}
-
-function guardarEstadoPaqueteLocal() {
-    const nuevoEstado = document.getElementById("dt-pkt-select-estado").value;
-    const pkt = window.DB_NODO_LOCAL.paquetes.find(p => p.codigo === codigoPaqueteSeleccionado);
-    
-    if (pkt) {
-        pkt.estado = nuevoEstado;
-        alert(`💾 Estado actualizado en el esquema ${window.DB_NODO_LOCAL.infraestructura.esquema}`);
-        cerrarModalDetallePaquete();
-        listarPaquetesLocales();
-    }
 }

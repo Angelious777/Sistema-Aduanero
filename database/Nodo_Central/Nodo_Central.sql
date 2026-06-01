@@ -333,3 +333,21 @@ VALUES (
     'Zona Sopocachi, La Paz',
     'juan.perez@email.com'
 );
+
+-- Ruta 1: Flujo de envío desde La Paz hacia Santa Cruz
+INSERT INTO ruta (id_ruta, id_almacen_origen, id_almacen_destino, descripcion) 
+VALUES (
+    1, 
+    1, 
+    2, 
+    'Ruta troncal de envío terrestre: Almacén Central LP -> Almacén Central SCZ. Tránsito estimado 14 horas.'
+);
+
+-- Ruta 2: Flujo de retorno desde Santa Cruz hacia La Paz
+INSERT INTO ruta (id_ruta, id_almacen_origen, id_almacen_destino, descripcion) 
+VALUES (
+    2, 
+    2, 
+    1, 
+    'Ruta troncal de retorno terrestre: Almacén Central SCZ -> Almacén Central LP. Control aduanero intermedio.'
+);
