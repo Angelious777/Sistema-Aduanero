@@ -1,0 +1,102 @@
+<section id="encomiendas">
+    <div class="explicacion-modulo">
+        <strong>Gestión de Encomiendas Nacionales.</strong> Interfaz para la administración diaria. Permite ejecutar búsquedas federadas y abrir la ficha unificada del paquete mediante la reconstrucción horizontal y vertical automática de esquemas disjuntos.
+    </div>
+
+    <div class="busqueda-contenedor">
+        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 12px; align-items: center;">
+            <div class="input-grupo">
+                <span class="input-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                </span>
+                <input type="text" id="filtro-codigo" placeholder="Buscar por código de rastreo (Ej: PK-LP-2026-001)...">
+            </div>
+            <select id="filtro-estado" class="input-grupo" style="padding: 12px; border-radius: 8px; border: 1px solid var(--borde);">
+                <option value="">-- Todos los Estados --</option>
+                <option value="Registrado">Registrado</option>
+                <option value="En Tránsito">En Tránsito</option>
+                <option value="Retenido por Aduana">Retenido por Aduana</option>
+                <option value="Entregado">Entregado</option>
+            </select>
+            <select id="filtro-origen" style="padding: 12px; border-radius: 8px; border: 1px solid var(--borde);">
+                <option value="">-- Origen --</option>
+                <option value="La Paz">La Paz</option>
+                <option value="Santa Cruz">Santa Cruz</option>
+            </select>
+            <select id="filtro-destino" style="padding: 12px; border-radius: 8px; border: 1px solid var(--borde);">
+                <option value="">-- Destino --</option>
+                <option value="La Paz">La Paz</option>
+                <option value="Santa Cruz">Santa Cruz</option>
+            </select>
+            <button id="btn-filtrar-encomiendas" class="btn-primario">Filtrar</button>
+        </div>
+    </div>
+
+    <div class="contenedor-tabla-panel">
+        <div class="responsive-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Remitente</th>
+                        <th>Destinatario</th>
+                        <th>Origen</th>
+                        <th>Destino</th>
+                        <th>Estado</th>
+                        <th>Fecha Registro</th>
+                        <th style="text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-encomiendas-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-detalle-encomienda">
+        <div class="modal-contenedor">
+            <div class="modal-header">
+                <h3 id="modal-titulo-codigo">Detalle de Encomienda: PK-XXXX</h3>
+                <button class="close-modal" id="btn-cerrar-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="panel-dos-columnas">
+                    <div class="bloque-resultado">
+                        <h3>Información General Logística</h3>
+                        <div class="detalles-ficha" id="modal-info-general">
+                            </div>
+                    </div>
+                    <div class="bloque-resultado">
+                        <h3>Información Financiera (Aislada Regional)</h3>
+                        <div class="detalles-ficha" id="modal-info-financiera">
+                            </div>
+                    </div>
+                </div>
+
+                <div class="contenedor-tabla-panel margin-top-md">
+                    <div class="tabla-header" style="padding: 12px 16px;">
+                        <h4>Historial de Tránsito y Auditoría de Nodos</h4>
+                    </div>
+                    <div class="responsive-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Evento / Acción</th>
+                                    <th>Ubicación / Almacén</th>
+                                    <th>Fragmento Origen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-tabla-historial">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

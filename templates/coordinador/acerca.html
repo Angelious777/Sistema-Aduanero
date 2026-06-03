@@ -1,0 +1,64 @@
+<section id="acerca">
+    <div class="explicacion-modulo">
+        <strong>Ficha Técnica e Institucional.</strong> Resumen del desarrollo del prototipo de Base de Datos Distribuida, detallando el entorno académico y la arquitectura híbrida implementada.
+    </div>
+
+    <div class="panel-dos-columnas" style="max-width: 1000px; margin: 0 auto; gap: 24px;">
+        
+        <div class="bloque-resultado" style="padding: 30px; border-top: 4px solid var(--azul-primario);">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 3rem; margin-bottom: 10px;">🏛️</div>
+                <h2 style="font-size: 1.4rem; color: var(--gris-oscuro); margin: 0;">Universidad Mayor de San Andrés</h2>
+                <p style="color: var(--azul-medio); font-weight: 600; margin: 4px 0 0 0; font-size: 0.95rem;">Carrera de Informática</p>
+                <small style="color: var(--gris-medio); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Facultad de Ciencias Puras y Naturales</small>
+            </div>
+
+            <div style="border-top: 1px solid var(--borde); padding-top: 16px; margin-top: 16px;">
+                <p style="font-size: 0.9rem; margin-bottom: 8px;"><strong>Proyecto:</strong> <span style="color: var(--gris-oscuro);">Sistema de Control Aduanero y Gestión de Encomiendas Interdepartamentales en Bolivia</span></p>
+                <p style="font-size: 0.9rem; margin-bottom: 8px;"><strong>Cátedra:</strong> <span style="color: var(--gris-oscuro);">Base de Datos III</span></p>
+                <p style="font-size: 0.9rem; margin-bottom: 8px;"><strong>Docente:</strong> <span style="color: var(--gris-oscuro);">MSc. Celia Elena Tarquino</span></p>
+                <p style="font-size: 0.9rem; margin-bottom: 8px;"><strong>Gestión Académica:</strong> <span style="color: var(--gris-oscuro);">La Paz - Bolivia, 2026</span></p>
+            </div>
+
+            <div style="border-top: 1px solid var(--borde); padding-top: 16px; margin-top: 16px;">
+                <h4 style="font-size: 0.9rem; color: var(--azul-primario); margin-bottom: 8px;">Equipo de Desarrollo (Integrantes):</h4>
+                <ul style="font-size: 0.9rem; color: var(--gris-oscuro); padding-left: 20px; line-height: 1.6;">
+                    <li>Arteaga Rosales Ammy Kim</li>
+                    <li>Escobar Angel Daniel</li>
+                    <li>Esquivel Castillo Vivian Roxana</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="bloque-resultado" style="padding: 30px; border-top: 4px solid var(--success);">
+            <h3 style="font-size: 1.1rem; color: var(--gris-oscuro); margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <span>🛠️</span> Especificaciones de la Arquitectura
+            </h3>
+            <p style="font-size: 0.88rem; color: var(--gris-medio); line-height: 1.5; margin-bottom: 16px;">
+                Este sistema emula un entorno heterogéneo y distribuido a nivel nacional, diseñado bajo principios de tolerancia a fallos, consistencia eventual y abstracción de localización de datos.
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="background-color: var(--gris-claro); padding: 12px; border-radius: 6px; border-left: 3px solid var(--azul-medio);">
+                    <strong style="font-size: 0.85rem; color: var(--azul-primario); display: block;">Nodo Coordinador Central:</strong>
+                    <span style="font-size: 0.82rem; color: var(--gris-oscuro);">Orquestador de consultas federadas, Query Parser, Optimizador de planes de ejecución y Administrador del protocolo Two-Phase Commit (2PC).</span>
+                </div>
+
+                <div style="background-color: var(--gris-claro); padding: 12px; border-radius: 6px; border-left: 3px solid var(--azul-medio);">
+                    <strong style="font-size: 0.85rem; color: var(--azul-primario); display: block;">Sede Occidente (La Paz):</strong>
+                    <span style="font-size: 0.82rem; color: var(--gris-oscuro);">Repositorio aislado gestionado sobre el motor de base de datos relacional <strong>PostgreSQL</strong>. Resguarda fragmentos logísticos locales de origen LP y registros financieros occidentales.</span>
+                </div>
+
+                <div style="background-color: var(--gris-claro); padding: 12px; border-radius: 6px; border-left: 3px solid var(--warning);">
+                    <strong style="font-size: 0.85rem; color: var(--azul-primario); display: block;">Sede Oriente (Santa Cruz):</strong>
+                    <span style="font-size: 0.82rem; color: var(--gris-oscuro);">Repositorio aislado gestionado sobre el motor de base de datos relacional <strong>Microsoft SQL Server</strong>. Almacena fragmentos operativos de origen SCZ e historiales de rampa oriente.</span>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--borde);">
+                <span class="badge-status success" style="font-size: 0.78rem; font-weight: 700;">PROTOTIPO ACADÉMICO OPERATIVO v2.0</span>
+            </div>
+        </div>
+
+    </div>
+</section>

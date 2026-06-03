@@ -1,0 +1,91 @@
+<section id="info-nodo">
+    <div class="explicacion-modulo">
+        <strong>Estado Operativo de la Sede Regional.</strong>
+        Monitoreo de la conectividad, sincronización de información y disponibilidad de los servicios necesarios para las operaciones aduaneras locales.
+    </div>
+
+    <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <button class="btn-primario" onclick="actualizarEstadoNodo()">
+            Actualizar Estado
+        </button>
+
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;">
+
+        <div class="tarjeta" style="padding: 14px; text-align: center;">
+            <small style="color:var(--gris-medio);">Sede Regional</small>
+            <h4 id="info-lbl-nodo">--</h4>
+        </div>
+
+        <div class="tarjeta" style="padding: 14px; text-align: center;">
+            <small style="color:var(--gris-medio);">Estado Operativo</small>
+            <h4 style="color: var(--success);">
+                ACTIVO
+            </h4>
+        </div>
+
+        <div class="tarjeta" style="padding: 14px; text-align: center;">
+            <small style="color:var(--gris-medio);">Clientes Sincronizados</small>
+            <h4 id="info-total-clientes">
+                --
+            </h4>
+        </div>
+
+        <div class="tarjeta" style="padding: 14px; text-align: center;">
+            <small style="color:var(--gris-medio);">Última Actualización</small>
+            <h4 id="info-lbl-fecha">
+                --
+            </h4>
+        </div>
+
+    </div>
+
+    <div class="contenedor-tabla-panel">
+        <div class="tabla-header">
+            <h3>Estado de Servicios Regionales</h3>
+            <span class="tabla-subtitulo">
+                Componentes utilizados durante la operación diaria
+            </span>
+        </div>
+
+        <div class="responsive-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Servicio</th>
+                        <th>Estado</th>
+                        <th>Última Actualización</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tabla-servicios-body">
+                    <tr>
+                        <td>Gestión de Paquetes</td>
+                        <td><span class="badge-success">Activo</span></td>
+                        <td>--</td>
+                    </tr>
+
+                    <tr>
+                        <td>Control de Movimientos</td>
+                        <td><span class="badge-success">Activo</span></td>
+                        <td>--</td>
+                    </tr>
+
+                    <tr>
+                        <td>Clientes Replicados</td>
+                        <td><span class="badge-success">Sincronizado</span></td>
+                        <td>--</td>
+                    </tr>
+
+                    <tr>
+                        <td>Comunicación con Nodo Coordinador</td>
+                        <td><span class="badge-success">Conectado</span></td>
+                        <td>--</td>
+                    </tr>
+                </tbody>
+
+            </table>
+        </div>
+    </div>
+</section>

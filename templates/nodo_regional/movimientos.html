@@ -1,0 +1,63 @@
+<section id="movimientos">
+    <div class="explicacion-modulo">
+        <strong>Historial Cronológico de Eventos de Rampa.</strong> Auditoría física e inserciones directas sobre el fragmento local de operaciones logísticas.
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <button class="btn-primario" onclick="abrirModalNuevoMovimiento()" style="background-color: var(--warning); border-color: var(--warning);">
+            Registrar Movimiento
+        </button>
+        <button class="btn-secundario" onclick="listarMovimientosLocales()">Actualizar</button>
+    </div>
+
+    <div class="contenedor-tabla-panel">
+        <div class="responsive-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha Evento</th>
+                        <th>Paquete</th>
+                        <th>Tipo Movimiento / Evento</th>
+                        <th>Observación de Control</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-movimientos-local-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="modal-nuevo-movimiento" class="modal-aduanero-overlay">
+        <div class="modal-aduanero-wrapper" style="border-top-color: var(--warning);">
+            <div class="modal-header-aduanero">
+                <h3>🚛 Control de Operación en Rampa Física</h3>
+                <button class="btn-cerrar-modal" onclick="cerrarModalNuevoMovimiento()">&times;</button>
+            </div>
+            <div class="modal-body-aduanero">
+                <form id="form-nuevo-movimiento">
+                    <div class="form-grupo-modal">
+                        <label>Seleccionar Encomienda en Custodia:</label>
+                        <select id="mov-form-paquete" required></select>
+                    </div>
+                    <div class="form-grupo-modal">
+                        <label>Tipo de Movimiento Aduanero:</label>
+                        <select id="mov-form-tipo" required>
+                            <option value="Control de Peso Físico">Control de Peso Físico</option>
+                            <option value="Apertura y Aforo">Apertura y Aforo / Verificación</option>
+                            <option value="Clasificación Arancelaria">Clasificación Arancelaria</option>
+                            <option value="Despacho de Salida">Despacho de Salida</option>
+                        </select>
+                    </div>
+                    <div class="form-grupo-modal">
+                        <label>Observación Detallada de Rampa:</label>
+                        <textarea id="mov-form-obs" rows="3" required placeholder="Ej. Carga verificada sin novedades arancelarias. Sellos de seguridad intactos..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer-aduanero">
+                <button type="button" class="btn-secundario" style="background-color: var(--gris-medio); border-color: var(--gris-medio);" onclick="cerrarModalNuevoMovimiento()">Cancelar</button>
+                <button type="button" class="btn-primario" style="background-color: var(--warning); border-color: var(--warning);" onclick="insertarMovimientoLocal()">Guardar</button>
+            </div>
+        </div>
+    </div>
+</section>

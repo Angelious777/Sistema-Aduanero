@@ -1,0 +1,35 @@
+<section id="movimientos">
+    <div class="explicacion-modulo">
+        <strong>Módulo de Movimientos Consolidados.</strong> Esta vista ejecuta un operador <code>UNION</code> abstracto sobre las tablas descentralizadas <code>MOVIMIENTO_LP</code> (Sede Occidente) y <code>MOVIMIENTO_SCZ</code> (Sede Oriente), ordenándolas cronológicamente de forma automática.
+    </div>
+
+    <div class="busqueda-contenedor">
+        <div style="display: flex; gap: 16px; align-items: center;">
+            <input type="text" id="buscar-movimiento-paquete" placeholder="Filtrar por código de paquete (Ej: PK-LP)..." style="flex: 2; padding: 12px; border: 1px solid var(--borde); border-radius: 8px;">
+            <select id="filtro-movimiento-nodo" style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--borde);">
+                <option value="">-- Todos los Nodos de Red --</option>
+                <option value="NODO_LA_PAZ">NODO_LA_PAZ (PostgreSQL)</option>
+                <option value="NODO_SANTA_CRUZ">NODO_SANTA_CRUZ (SQL Server)</option>
+            </select>
+            <button id="btn-filtrar-movimientos" class="btn-primario" style="padding: 0 30px;">Filtrar Bitácora</button>
+        </div>
+    </div>
+
+    <div class="contenedor-tabla-panel">
+        <div class="responsive-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha / Hora Stamp</th>
+                        <th>Código Encomienda</th>
+                        <th>Acción / Evento Aduanero</th>
+                        <th>Ubicación Física / Almacén</th>
+                        <th>Fragmento de Base de Datos</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-movimientos-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</section>

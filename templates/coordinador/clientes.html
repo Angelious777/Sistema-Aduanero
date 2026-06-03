@@ -1,0 +1,32 @@
+<section id="clientes">
+    <div class="explicacion-modulo">
+        <strong>Consolidación de Clientes Aduaneros.</strong> Muestra la unificación analítica de los esquemas <code>CLIENTE_PUBLICO</code> y <code>CLIENTE_PRIVADO</code>. El motor del coordinador central asocia de forma automática las llaves de identidad corporativa.
+    </div>
+
+    <div class="busqueda-contenedor">
+        <div style="display: flex; gap: 16px;">
+            <input type="text" id="buscar-cliente-nombre" placeholder="Buscar por nombres o apellidos del cliente..." style="flex: 2; padding: 12px; border: 1px solid var(--borde); border-radius: 8px;">
+            <input type="text" id="buscar-cliente-doc" placeholder="Buscar por Documento de Identidad (CI)..." style="flex: 1; padding: 12px; border: 1px solid var(--borde); border-radius: 8px;">
+            <button id="btn-buscar-clientes" class="btn-primario" style="padding: 0 30px;">Ejecutar Búsqueda</button>
+        </div>
+    </div>
+
+    <div class="contenedor-tabla-panel">
+        <div class="responsive-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre Completo</th>
+                        <th>Documento de Identidad</th>
+                        <th>Teléfono de Contacto</th>
+                        <th>Correo Electrónico</th>
+                        <th>Fecha Alta Sistema</th>
+                        <th>Tipo Esquema</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-clientes-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</section>

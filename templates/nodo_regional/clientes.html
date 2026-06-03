@@ -1,0 +1,112 @@
+<section id="clientes">
+    <div class="explicacion-modulo">
+        <strong>Catálogo Replicado: CLIENTE_PUBLICO.</strong> Consulta local de datos autorizados a nivel nacional. Las acciones de alteración o visualización confidencial están deshabilitadas en este nodo perimetral.
+    </div>
+
+    <div style="background: var(--blanco); padding: 16px; border: 1px solid var(--borde); border-radius: 8px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+            <button class="btn-primario" onclick="abrirModalRegistroCliente()" style="display: flex; align-items: center; gap: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><line x1="19" y1="11" x2="19" y2="17"></line><line x1="16" y1="14" x2="22" y2="14"></line></svg>
+                Nuevo Cliente
+            </button>
+            <button class="btn-secundario" onclick="listarClientesReplicados()">Actualizar Lista</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+            <input type="text" id="clt-buscar-nombre" placeholder="Filtrar por Nombre / Razón Social..." style="padding: 10px; border: 1px solid var(--borde); border-radius: 6px;">
+            <input type="text" id="clt-buscar-doc" placeholder="Filtrar por Documento..." style="padding: 10px; border: 1px solid var(--borde); border-radius: 6px;">
+            <input type="text" id="clt-buscar-tel" placeholder="Filtrar por Teléfono..." style="padding: 10px; border: 1px solid var(--borde); border-radius: 6px;">
+        </div>
+    </div>
+
+    <div class="contenedor-tabla-panel">
+        <div class="responsive-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre / Razón Social</th>
+                        <th>Documento</th>
+                        <th>Teléfono</th>
+                        <th>Correo Electrónico</th>
+                        <th style="text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-clientes-replicados-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="modal-registro-cliente" class="modal-aduanero-overlay">
+        <div class="modal-aduanero-wrapper">
+            <div class="modal-header-aduanero">
+                <h3>📋 Formulario de Registro Aduanero (Transnacional)</h3>
+                <button class="btn-cerrar-modal" onclick="cerrarModalRegistroCliente()">&times;</button>
+            </div>
+            <div class="modal-body-aduanero">
+                <form id="form-registro-cliente">
+                    <div class="seccion-form-titulo">Sección Datos Públicos (Destinados a Réplica Total)</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-grupo-modal">
+                            <label>Nombre / Razón Social:</label>
+                            <input type="text" id="reg-clt-nombre" required placeholder="Ej. Importadora Oriente">
+                        </div>
+                        <div class="form-grupo-modal">
+                            <label>Apellido (Si aplica):</label>
+                            <input type="text" id="reg-clt-apellido" placeholder="Ej. Mendoza (Opcional)">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-grupo-modal">
+                            <label>Documento (CI / Pasaporte):</label>
+                            <input type="text" id="reg-clt-doc" required placeholder="Ej. 6920491">
+                        </div>
+                        <div class="form-grupo-modal">
+                            <label>Teléfono:</label>
+                            <input type="text" id="reg-clt-tel" required placeholder="Ej. 7739102">
+                        </div>
+                    </div>
+                    <div class="form-grupo-modal" style="margin-top: 12px;">
+                        <label>Correo Electrónico:</label>
+                        <input type="email" id="reg-clt-correo" required placeholder="Ej. info@oriente.bo">
+                    </div>
+
+                    <div class="seccion-form-titulo" style="color: var(--danger); border-bottom-color: rgba(239,68,68,0.2);">Sección Datos Privados (Exclusivos del Coordinador Central)</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-grupo-modal">
+                            <label>Dirección Fiscal Domiciliaria:</label>
+                            <input type="text" id="reg-clt-direccion" required placeholder="Ej. 4to Anillo, Calle 9">
+                        </div>
+                        <div class="form-grupo-modal">
+                            <label>Número NIT Institucional:</label>
+                            <input type="text" id="reg-clt-nit" required placeholder="Ej. NIT-1029381023">
+                        </div>
+                    </div>
+                    <div class="form-grupo-modal">
+                        <label>Observaciones / Datos de Control Interno:</label>
+                        <textarea id="reg-clt-observaciones" rows="2" placeholder="Restricciones de fianza, historial de aduana..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer-aduanero">
+                <button type="button" class="btn-danger" style="background-color: var(--gris-medio); border-color: var(--gris-medio);" onclick="cerrarModalRegistroCliente()">Cancelar</button>
+                <button type="button" class="btn-secundario" onclick="document.getElementById('form-registro-cliente').reset()">Limpiar Formulario</button>
+                <button type="button" class="btn-primario" onclick="despacharRegistroClienteCoordinador()">Registrar Cliente</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-ver-cliente" class="modal-aduanero-overlay">
+        <div class="modal-aduanero-wrapper" style="max-width: 450px; border-top-color: var(--success);">
+            <div class="modal-header-aduanero">
+                <h3>🔍 Ficha Pública de Cliente Replicado</h3>
+                <button class="btn-cerrar-modal" onclick="cerrarModalVerCliente()">&times;</button>
+            </div>
+            <div class="modal-body-aduanero" id="modal-ver-cliente-content" style="line-height: 1.8;">
+                </div>
+            <div class="modal-footer-aduanero">
+                <button type="button" class="btn-secundario" onclick="cerrarModalVerCliente()">Volver</button>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,82 @@
+<section id="monitoreo">
+
+    <div class="explicacion-modulo">
+        <p><strong>Monitor de Infraestructura Distribuida:</strong> Control de conectividad de los nodos de la red aduanera nacional. Detecta estados operativos independientes y latencias en los canales de comunicación seguros establecidos.</p>
+    </div>
+
+    <div class="topologia-red-contenedor">
+        <h3>Topología Lógica del Sistema Nacional</h3>
+        <div class="esquema-topologia">
+            
+            <div class="nodo-topologia central-top" id="top-coordinador">
+    <div class="icono-servidor">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--azul-primario)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line><line x1="10" y1="6" x2="14" y2="6"></line></svg>
+    </div>
+    <h4>Nodo Coordinador</h4>
+    <span class="lbl-rol">Central (La Paz - Sede Principal)</span>
+    </div>
+
+    <div class="enlaces-topologia">
+        <div class="linea-enlace" id="enlace-lp-line"></div>
+        <div class="linea-enlace" id="enlace-scz-line"></div>
+    </div>
+
+    <div class="nodos-regionales-topologia">
+        <div class="nodo-topologia regional-top online" id="top-nodo-lp">
+            <div class="icono-servidor">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"></path></svg>
+            </div>
+            <h4>Nodo Regional La Paz</h4>
+            <span class="badge-motor">PostgreSQL</span>
+            <span class="ping-indicator" id="ping-lp">Latencia: 12ms</span>
+        </div>
+
+        <div class="nodo-topologia regional-top online" id="top-nodo-scz">
+            <div class="icono-servidor">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            </div>
+            <h4>Nodo Regional Santa Cruz</h4>
+            <span class="badge-motor">SQL Server</span>
+            <span class="ping-indicator" id="ping-scz">Latencia: 24ms</span>
+        </div>
+    </div>
+
+        </div>
+    </div>
+
+    <div class="contenedor-tabla-panel margin-top-lg">
+        <div class="tabla-header">
+            <h2>Métricas Operativas de Disponibilidad de Datos</h2>
+        </div>
+        <div class="responsive-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nodo</th>
+                        <th>Ubicación Geográfica</th>
+                        <th>Entorno/Motor Asociado</th>
+                        <th>Última Comunicación</th>
+                        <th>Estado del Canal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>NODO_LA_PAZ</strong></td>
+                        <td>Almacén Central El Alto, La Paz</td>
+                        <td><code class="codigo-motor">PostgreSQL Relational</code></td>
+                        <td id="time-lp-check">Sincronizado hace un momento</td>
+                        <td><span class="badge badge-success">ONLINE / ACTIVO</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>NODO_SANTA_CRUZ</strong></td>
+                        <td>Almacén Regional Oriente, Santa Cruz</td>
+                        <td><code class="codigo-motor">MS SQL Server Enterprise</code></td>
+                        <td id="time-scz-check">Sincronizado hace un momento</td>
+                        <td><span class="badge badge-success">ONLINE / ACTIVO</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</section>

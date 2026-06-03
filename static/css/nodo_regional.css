@@ -1,0 +1,491 @@
+/**
+ * nodo_regional.css - Estilos Operativos Locales y Modales Uniformados
+ * Alineado estrictamente con la paleta y componentes del Nodo Coordinador
+ */
+
+/* ==========================================================================
+   1. VARIABLES DE DISEÑO (Paleta azul limpia institucional)
+   ========================================================================== */
+:root {
+    --azul-primario: #1e40af;       /* Azul oscuro institucional */
+    --azul-medio: #3b82f6;          /* Azul vibrante para enlaces y estados */
+    --azul-claro: #eff6ff;          /* Fondo suave para destacar contenedores */
+    --gris-oscuro: #1e293b;         /* Texto principal y títulos de sidebar */
+    --gris-medio: #64748b;          /* Subtítulos y metadatos */
+    --gris-claro: #f8fafc;          /* Fondo general de la aplicación */
+    --blanco: #ffffff;
+    --borde: #e2e8f0;               /* Separadores limpios */
+    
+    /* Paleta de estados operativos */
+    --success: #10b981;             /* Online / Commit / Sincronizado */
+    --success-bg: #ecfdf5;
+    --warning: #f59e0b;             /* Prepare / En proceso / Cola */
+    --warning-bg: #fffbeb;
+    --danger: #ef4444;              /* Abort / Offline / Retenido */
+    --danger-bg: #fef2f2;
+}
+
+/* ==========================================================================
+   2. REGLAS BASE Y RESET INTEGRAL
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--gris-claro);
+    color: var(--gris-oscuro);
+    overflow: hidden; /* Evita scrolls dobles en la pantalla completa */
+}
+
+/* --- CORE LAYOUT DE DOS COLUMNAS --- */
+.layout-contenedor {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--gris-claro);
+}
+
+/* ==========================================================================
+   3. SIDEBAR PANEL (Navegación Regional Izquierda)
+   ========================================================================== */
+.sidebar-panel {
+    width: 280px;
+    height: 100%;
+    background-color: var(--blanco);
+    border-right: 1px solid var(--borde);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0; /* Impide que el contenido derecho comprima el menú */
+}
+
+/* Encabezado del Logo en Sidebar */
+.sidebar-panel .logo {
+    padding: 24px;
+    border-bottom: 1px solid var(--borde);
+}
+
+.sidebar-panel .logo h2 {
+    font-size: 1.25rem;
+    color: var(--azul-primario);
+    font-weight: 700;
+}
+
+.sidebar-panel .logo .subtitulo {
+    font-size: 0.75rem;
+    color: var(--gris-medio);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: block;
+    margin-top: 4px;
+}
+
+/* Separadores de Categoría en Sidebar */
+.sidebar-categoria {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gris-medio);
+    font-weight: 700;
+    margin-top: 18px;
+    margin-bottom: 6px;
+    padding-left: 16px;
+}
+
+/* Menú de Navegación */
+.menu-navegacion {
+    padding: 16px;
+    display: flex;
+    flex-direction: column; /* Fuerza el apilamiento vertical */
+    gap: 8px;
+    flex-grow: 1;
+}
+
+/* Enlaces / Botones de Navegación */
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: var(--gris-medio);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    width: 100%;
+}
+
+.nav-link:hover {
+    background-color: var(--azul-claro);
+    color: var(--azul-medio);
+}
+
+.nav-link.active {
+    background-color: var(--azul-primario);
+    color: var(--blanco);
+}
+
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid var(--borde);
+    font-size: 0.8rem;
+    color: var(--gris-medio);
+}
+
+/* ==========================================================================
+   4. CONTENIDO PRINCIPAL, TOPBAR Y VISTAS
+   ========================================================================== */
+.contenido-principal {
+    flex-grow: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.topbar-panel {
+    height: 70px;
+    background-color: var(--blanco);
+    border-bottom: 1px solid var(--borde);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    flex-shrink: 0;
+}
+
+.topbar-panel h1 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--gris-oscuro);
+}
+
+.info-sistema {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.badge-nodo {
+    background-color: var(--gris-oscuro);
+    color: var(--blanco);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+.reloj {
+    font-size: 0.9rem;
+    color: var(--gris-medio);
+    font-variant-numeric: tabular-nums;
+}
+
+.contenedor-vistas-dinamicas {
+    flex-grow: 1;
+    padding: 40px;
+    overflow-y: auto; /* Permite scroll exclusivo de formularios/tablas */
+    max-width: 1400px;
+    width: 100%;
+}
+
+/* Control de secciones SPA */
+.contenedor-vistas-dinamicas > section {
+    display: none;
+    animation: fadeIn 0.4s ease-in-out forwards;
+}
+
+.contenedor-vistas-dinamicas > section.section-active {
+    display: block !important;
+}
+
+/* Banner de explicación del módulo */
+.explicacion-modulo {
+    background-color: var(--blanco);
+    border-left: 4px solid var(--azul-medio);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 30px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--gris-medio);
+}
+
+.explicacion-modulo strong {
+    color: var(--gris-oscuro);
+}
+
+/* ==========================================================================
+   5. BOTONES, TABLAS Y BADGES (UI Formal Uniforme)
+   ========================================================================== */
+
+/* Botones */
+.btn-primario, .btn-secundario, .btn-success, .btn-danger {
+    padding: 12px 24px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+}
+
+.btn-primario { background-color: var(--azul-primario); color: var(--blanco); }
+.btn-primario:hover { background-color: #1d4ed8; }
+
+.btn-secundario { background-color: var(--azul-claro); color: var(--azul-medio); }
+.btn-secundario:hover { background-color: #dbeafe; }
+
+.btn-success { background-color: var(--success); color: var(--blanco); }
+.btn-success:hover { background-color: #059669; }
+
+.btn-danger { background-color: var(--danger); color: var(--blanco); }
+.btn-danger:hover { background-color: #dc2626; }
+
+button:disabled {
+    background-color: var(--borde) !important;
+    color: var(--gris-medio) !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
+
+/* Tablas Estilo Corporativo */
+.contenedor-tabla-panel {
+    background-color: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+.responsive-table {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+th {
+    background-color: var(--gris-claro);
+    color: var(--gris-medio);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--borde);
+}
+
+td {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--borde);
+    color: var(--gris-oscuro);
+    line-height: 1.4;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+tr:hover td {
+    background-color: var(--gris-claro);
+}
+
+/* Etiquetas / Badges de Estado */
+.badge {
+    padding: 4px 10px;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.status-pendiente { background-color: var(--azul-claro); color: var(--azul-medio); }
+.status-proceso { background-color: var(--warning-bg); color: var(--warning); }
+.status-completado { background-color: var(--success-bg); color: var(--success); }
+.status-cancelado { background-color: var(--danger-bg); color: var(--danger); }
+
+/* Monospace para códigos de base de datos */
+code {
+    font-family: monospace;
+    background-color: var(--gris-claro);
+    color: var(--gris-oscuro);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    border: 1px solid var(--borde);
+}
+
+/* ==========================================================================
+   6. VENTANAS MODALES ADUANERAS (Integradas con efecto Blur)
+   ========================================================================== */
+.modal-aduanero-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.modal-aduanero-overlay.modal-active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-aduanero-wrapper {
+    background-color: var(--blanco);
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 650px;
+    transform: translateY(-20px);
+    transition: transform 0.3s ease;
+    border-top: 5px solid var(--azul-primario);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-aduanero-overlay.modal-active .modal-aduanero-wrapper {
+    transform: translateY(0);
+}
+
+.modal-header-aduanero {
+    padding: 18px 24px;
+    background-color: var(--azul-primario);
+    color: var(--blanco);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.modal-header-aduanero h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: var(--blanco);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-header-aduanero svg {
+    color: var(--blanco);
+}
+
+.btn-cerrar-modal {
+    background: none;
+    border: none;
+    color: var(--blanco);
+    cursor: pointer;
+    font-size: 1.5rem;
+    padding: 0;
+    line-height: 1;
+    transition: opacity 0.2s;
+}
+
+.btn-cerrar-modal:hover {
+    opacity: 0.7;
+}
+
+.modal-body-aduanero {
+    padding: 24px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.modal-footer-aduanero {
+    padding: 16px 24px;
+    background-color: var(--gris-claro);
+    border-top: 1px solid var(--borde);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   7. INFRAESTRUCTURA DE FORMULARIOS MODALES
+   ========================================================================== */
+.form-grupo-modal {
+    margin-bottom: 16px;
+}
+
+.form-grupo-modal label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gris-oscuro);
+    margin-bottom: 6px;
+}
+
+.form-grupo-modal input,
+.form-grupo-modal select,
+.form-grupo-modal textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background-color: var(--gris-claro);
+    color: var(--gris-oscuro);
+    transition: all 0.2s ease;
+}
+
+.form-grupo-modal input:focus,
+.form-grupo-modal select:focus,
+.form-grupo-modal textarea:focus {
+    outline: none;
+    border-color: var(--azul-medio);
+    background-color: var(--blanco);
+}
+
+.form-grupo-modal textarea {
+    resize: vertical;
+}
+
+.seccion-form-titulo {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--azul-medio);
+    margin: 24px 0 14px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--borde);
+}
+
+/* ==========================================================================
+   8. ANIMACIONES Y KEYFRAMES
+   ========================================================================== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
