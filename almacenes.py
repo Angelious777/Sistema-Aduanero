@@ -143,8 +143,8 @@ def eliminar_almacen_nodo(id_almacen):
 
 def sincronizar_almacenes_cascada():
     """
-    Fuerza la paridad de catálogos mediante UPSERT coordinado
-    evitando colapsar las restricciones de llave foránea (FK).
+    Fuerza la paridad estricta de catálogos mediante UPSERT coordinado
+    y DESTRUYE registros huérfanos en los nodos regionales para reflejar exactamente a Central.
     """
     conn_lp = None
     conn_scz = None
@@ -156,8 +156,26 @@ def sincronizar_almacenes_cascada():
         cur_lp = conn_lp.cursor()
         cur_scz = conn_scz.cursor()
         
-        # Sentencias UPSERT adaptadas a cada motor
-        # PostgreSQL (La Paz): ON CONFLICT DO UPDATE
+        # 1. Recolectamos los IDs que sí existen en Central
+        ids_validos = [int(alm['id_almacen']) for alm in almacenes_master]
+        
+        # 2. LIMPIEZA DE HUÉRFANOS (Si Central tiene almacenes, borramos los que no estén en la lista)
+        if ids_validos:
+            # Formateamos los placeholders según el motor
+            placeholders_lp = ", ".join(["%s"] * len(ids_validos))
+            placeholders_scz = ", ".join(["?"] * len(ids_validos))
+            
+            sql_delete_lp = f"DELETE FROM almacen WHERE id_almacen NOT IN ({placeholders_lp});"
+            sql_delete_scz = f"DELETE FROM almacen WHERE id_almacen NOT IN ({placeholders_scz});"
+            
+            cur_lp.execute(sql_delete_lp, tuple(ids_validos))
+            cur_scz.execute(sql_delete_scz, tuple(ids_validos))
+        else:
+            # Si Central está completamente vacío, limpiamos todas las tablas regionales
+            cur_lp.execute("DELETE FROM almacen;")
+            cur_scz.execute("DELETE FROM almacen;")
+
+        # 3. SENTENCIAS UPSERT (Tu lógica original adaptada por motor)
         sql_upsert_lp = """
             INSERT INTO almacen (id_almacen, nombre, ciudad, direccion, nodo_responsable)
             VALUES (%s, %s, %s, %s, %s)
@@ -169,7 +187,6 @@ def sincronizar_almacenes_cascada():
                 nodo_responsable = EXCLUDED.nodo_responsable;
         """
         
-        # SQL Server (Santa Cruz): Usamos MERGE para simular el Upsert
         sql_upsert_scz = """
             MERGE almacen AS target
             USING (SELECT ? AS id_almacen) AS source
@@ -181,6 +198,7 @@ def sincronizar_almacenes_cascada():
                 VALUES (?, ?, ?, ?, ?);
         """
         
+        # 4. EJECUCIÓN DEL FLUJO MAESTRO
         for alm in almacenes_master:
             # Ejecutar en Postgres (La Paz)
             valores_lp = (alm['id_almacen'], alm['nombre'], alm['ciudad'], alm['direccion'], alm['nodo_responsable'])
@@ -188,17 +206,19 @@ def sincronizar_almacenes_cascada():
             
             # Ejecutar en SQL Server (Santa Cruz)
             valores_scz = (
-                alm['id_almacen'],                  # Para el ON de la condición
-                alm['nombre'], alm['ciudad'], alm['direccion'], alm['nodo_responsable'], # Para el UPDATE
-                alm['id_almacen'], alm['nombre'], alm['ciudad'], alm['direccion'], alm['nodo_responsable'] # Para el INSERT
+                alm['id_almacen'],
+                alm['nombre'], alm['ciudad'], alm['direccion'], alm['nodo_responsable'],
+                alm['id_almacen'], alm['nombre'], alm['ciudad'], alm['direccion'], alm['nodo_responsable']
             )
             cur_scz.execute(sql_upsert_scz, valores_scz)
             
+        # Transacción ACID: O se aplica todo o nada
         conn_lp.commit()
         conn_scz.commit()
         return True
+
     except Exception as e:
-        print(f"🚨 Error en sincronización forzada inteligente: {str(e)}")
+        print(f"🚨 Error en sincronización forzada inteligente con purga: {str(e)}")
         if conn_lp: conn_lp.rollback()
         if conn_scz: conn_scz.rollback()
         return False
