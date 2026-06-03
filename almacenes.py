@@ -2,22 +2,22 @@
 from conexiones import conectar_central, conectar_lp, conectar_scz
 
 def obtener_almacenes_global():
-    """Consulta el Nodo Central para traer la lista unificada."""
+    """Consulta el Nodo Central para traer la lista unificada forzando tipado."""
     almacenes = []
     conn = None
     cur = None
     try:
         conn = conectar_central()
         cur = conn.cursor()
-        cur.execute("SELECT id_almacen, nombre, ciudad, direccion, nodo_responsable FROM almacen")
+        cur.execute("SELECT id_almacen, nombre, ciudad, direccion, nodo_responsable FROM almacen ORDER BY id_almacen ASC")
         filas = cur.fetchall()
         for fila in filas:
             almacenes.append({
-                "id_almacen": fila[0],
-                "nombre": fila[1],
-                "ciudad": fila[2],
-                "direccion": fila[3],
-                "nodo_responsable": fila[4]
+                "id_almacen": int(fila[0]), # Forzamos entero para evitar strings o nulos en las FK
+                "nombre": str(fila[1]) if fila[1] is not None else "Sin Nombre",
+                "ciudad": str(fila[2]) if fila[2] is not None else "S/D",
+                "direccion": str(fila[3]) if fila[3] is not None else "",
+                "nodo_responsable": str(fila[4]).strip().upper() if fila[4] is not None else "CENTRAL"
             })
     finally:
         if cur: cur.close()
