@@ -1,42 +1,51 @@
 /**
  * dashboard.js - Controlador del Dashboard Operativo Central
+ * Ahora consume datos reales desde /api/dashboard y llena las métricas
+ * del coordinador sin usar datos de prueba en memoria.
  */
+
 document.addEventListener("DOMContentLoaded", function() {
     inicializarDashboardOperativo();
 });
 
-function inicializarDashboardOperativo() {
-    if (!window.DB_PROYECTO_GLOBAL) return;
-    
-    const pkts = window.DB_PROYECTO_GLOBAL.paquetes;
-    const movs = window.DB_PROYECTO_GLOBAL.movimientos;
-    const clts = window.DB_PROYECTO_GLOBAL.clientes;
+async function inicializarDashboardOperativo() {
+    try {
+        const response = await fetch('/api/dashboard');
+        const data = await response.json();
 
-    // Calcular las 6 métricas operativas requeridas
-    document.getElementById("dash-totales").textContent = pkts.length;
-    document.getElementById("dash-transito").textContent = pkts.filter(p => p.estado === "En Tránsito").length;
-    document.getElementById("dash-entregadas").textContent = pkts.filter(p => p.estado === "Entregado").length;
-    document.getElementById("dash-pendientes").textContent = pkts.filter(p => p.estado === "Retenido por Aduana" || p.estado === "Registrado").length;
-    document.getElementById("dash-clientes").textContent = clts.length;
-    document.getElementById("dash-movimientos").textContent = movs.length;
+        if (!data.success) {
+            console.error('Error obteniendo datos del dashboard del coordinador:', data.error);
+            return;
+        }
 
-    // Poblar los Contadores del Mapa Operativo Nacional
-    document.getElementById("mapa-count-lp").textContent = pkts.filter(p => p.nodo === "NODO_LA_PAZ").length;
-    document.getElementById("mapa-count-scz").textContent = pkts.filter(p => p.nodo === "NODO_SANTA_CRUZ").length;
+        const dashboard = data.data || {};
+        const coords = dashboard.coordinador || {};
 
-    // Poblar Tabla de Actividad Reciente (Últimos 4 movimientos del día)
-    const tbody = document.getElementById("tabla-actividad-reciente");
-    if (tbody) {
-        tbody.innerHTML = "";
-        movs.slice(0, 4).forEach(m => {
-            const fila = document.createElement("tr");
-            fila.innerHTML = `
-                <td>${m.fecha}</td>
-                <td><code class="codigo-paquete">${m.paquete}</code></td>
-                <td><span class="badge-status info">${m.evento}</span></td>
-                <td><code class="codigo-nodo">${m.nodo}</code></td>
-            `;
-            tbody.appendChild(fila);
-        });
+        document.getElementById('dash-totales').textContent = coords.paquetes_totales || 0;
+        document.getElementById('dash-transito').textContent = coords.en_transito || 0;
+        document.getElementById('dash-entregadas').textContent = coords.entregadas || 0;
+        document.getElementById('dash-pendientes').textContent = coords.pendientes_retenidos || 0;
+        document.getElementById('dash-clientes').textContent = coords.clientes_registrados || 0;
+        document.getElementById('dash-movimientos').textContent = coords.movimientos_dia || 0;
+
+        document.getElementById('mapa-count-lp').textContent = coords.paquetes_lp || 0;
+        document.getElementById('mapa-count-scz').textContent = coords.paquetes_scz || 0;
+
+        const actividadTbody = document.getElementById('tabla-actividad-reciente');
+        if (actividadTbody) {
+            actividadTbody.innerHTML = '';
+            const items = Array.isArray(dashboard.actividad_reciente) ? dashboard.actividad_reciente.slice(0, 4) : [];
+            if (items.length === 0) {
+                actividadTbody.innerHTML = '<tr class="placeholder-row"><td colspan="4">No hay eventos recientes disponibles.</td></tr>';
+            } else {
+                items.forEach(item => {
+                    const fila = document.createElement('tr');
+                    fila.innerHTML = `<td colspan="4">${item}</td>`;
+                    actividadTbody.appendChild(fila);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error inicializando dashboard operativo:', error);
     }
 }
