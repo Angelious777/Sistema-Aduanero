@@ -37,19 +37,17 @@ def obtener_clientes_global():
         if conn: conn.close()
     return clientes
 
+
 def registrar_cliente_nodo(nit_ci, nombre, apellido_paterno, apellido_materno, telefono, direccion, email, nodo_destino):
     id_cliente_global = str(uuid.uuid4())
     fecha_actual = datetime.now()
 
-    # Inicializamos todas las conexiones en None
     conn_lp, cur_lp = None, None
     conn_scz, cur_scz = None, None
     conn_central, cur_central = None, None
 
     try:
-        # =========================================================
-        # 1. INSERCIÓN EN LA PAZ (PostgreSQL) - Replicación Total
-        # =========================================================
+        # 1. INSERCION EN LA PAZ (PostgreSQL)
         conn_lp = conectar_lp()
         cur_lp = conn_lp.cursor()
         sql_lp = """
@@ -58,9 +56,7 @@ def registrar_cliente_nodo(nit_ci, nombre, apellido_paterno, apellido_materno, t
         """
         cur_lp.execute(sql_lp, (id_cliente_global, nombre, apellido_paterno, apellido_materno, telefono, fecha_actual))
 
-        # =========================================================
-        # 2. INSERCIÓN EN SANTA CRUZ (SQL Server) - Replicación Total
-        # =========================================================
+        # 2. INSERCION EN SANTA CRUZ (SQL Server)
         conn_scz = conectar_scz()
         cur_scz = conn_scz.cursor()
         sql_scz = """
@@ -69,9 +65,7 @@ def registrar_cliente_nodo(nit_ci, nombre, apellido_paterno, apellido_materno, t
         """
         cur_scz.execute(sql_scz, (id_cliente_global, nombre, apellido_paterno, apellido_materno, telefono, fecha_actual))
 
-        # =========================================================
-        # 3. INSERCIÓN EN NODO CENTRAL (SQL Server)
-        # =========================================================
+        # 3. INSERCION EN NODO CENTRAL (SQL Server)
         conn_central = conectar_central()
         cur_central = conn_central.cursor()
 
@@ -87,25 +81,19 @@ def registrar_cliente_nodo(nit_ci, nombre, apellido_paterno, apellido_materno, t
         """
         cur_central.execute(sql_central_priv, (id_cliente_global, nit_ci, direccion, email))
 
-        # =========================================================
-        # 4. COMMITS EXPLÍCITOS EN TODOS LOS MOTORES
-        # =========================================================
-        conn_lp.commit()       # Asegura los datos en PostgreSQL
-        conn_scz.commit()      # Asegura los datos en SQL Server Regional
-        conn_central.commit()  # Asegura los datos en el Nodo Central
+        conn_lp.commit()
+        conn_scz.commit()
+        conn_central.commit()
         
         return True
 
     except Exception as e:
-        # Rollback en cascada si cualquiera de los 3 motores falla
         if conn_lp: conn_lp.rollback()
         if conn_scz: conn_scz.rollback()
         if conn_central: conn_central.rollback()
         print(f"--> [DISTRIBUTED TRANSACTION ROLLBACK]: {str(e)}")
         raise e
-
     finally:
-        # Cierre limpio de todo el pool de conexiones abiertas
         if cur_lp: cur_lp.close()
         if conn_lp: conn_lp.close()
         if cur_scz: cur_scz.close()
@@ -122,7 +110,6 @@ def obtener_clientes_local_lp():
     try:
         conn = conectar_lp()
         cur = conn.cursor()
-        # Nota: Usamos minúsculas de acuerdo al DDL de tu tabla en Postgres
         cur.execute("""
             SELECT id_cliente, nombre, apellido_paterno, apellido_materno, telefono, fecha_registro
             FROM cliente_publico
@@ -135,11 +122,12 @@ def obtener_clientes_local_lp():
             clientes.append({
                 "id": str(fila[0]),
                 "nombre": nombre_completo,
-                "documento": "Local LP", # El fragmento operativo local de LP no guarda el DNI/Dirección/Email
-                "telefono": fila[4],
-                "correo": "Consulte a Central",
+                "telefono": fila[4] if fila[4] else '—',
                 "registro": fecha_registro,
-                "direccion": "Datos resguardados en Central"
+                # Retorna la advertencia directa en lugar de nulos o nombres de nodo
+                "documento": "Consulte a Central", 
+                "correo": "Consulte a Central",
+                "direccion": "Consulte a Central"
             })
     finally:
         if cur: cur.close()
@@ -155,7 +143,6 @@ def obtener_clientes_local_scz():
     try:
         conn = conectar_scz()
         cur = conn.cursor()
-        # Nota: Usamos MAYÚSCULAS de acuerdo al DDL de tu tabla en SQL Server Regional
         cur.execute("""
             SELECT id_cliente, nombre, apellido_paterno, apellido_materno, telefono, fecha_registro
             FROM CLIENTE_PUBLICO
@@ -168,11 +155,12 @@ def obtener_clientes_local_scz():
             clientes.append({
                 "id": str(fila[0]),
                 "nombre": nombre_completo,
-                "documento": "Local SCZ", # El fragmento operativo local de SCZ tampoco guarda datos privados
                 "telefono": fila[4] if fila[4] else '—',
-                "correo": "Consulte a Central",
                 "registro": fecha_registro,
-                "direccion": "Datos resguardados en Central"
+                # Retorna la advertencia directa en lugar de nulos o nombres de nodo
+                "documento": "Consulte a Central", 
+                "correo": "Consulte a Central",
+                "direccion": "Consulte a Central"
             })
     finally:
         if cur: cur.close()
@@ -181,33 +169,38 @@ def obtener_clientes_local_scz():
 
 
 def obtener_clientes_local_central():
-    """Consulta la base de datos local del Nodo Central (SQL Server) unificando sus fragmentos verticales"""
+    """Consulta la base de datos del Nodo Central (SQL Server Master)"""
     clientes = []
     conn = None
     cur = None
     try:
         conn = conectar_central()
         cur = conn.cursor()
-        # SQL Server: Unificamos la tabla operativa (pública) con la financiera/confidencial (privada)
         cur.execute("""
-            SELECT pub.id_cliente, pub.nombre, pub.apellido_paterno, pub.apellido_materno, 
-                   pub.telefono, pub.fecha_registro, priv.documento_identidad, priv.direccion, priv.email
-            FROM CLIENTE_PUBLICO pub
-            INNER JOIN CLIENTE_PRIVADO priv ON pub.id_cliente = priv.id_cliente
+            SELECT p.id_cliente, p.nombre, p.apellido_paterno, p.apellido_materno, p.telefono, p.fecha_registro,
+                   pr.documento_identidad, pr.email, pr.direccion
+            FROM CLIENTE_PUBLICO p
+            INNER JOIN CLIENTE_PRIVADO pr ON p.id_cliente = pr.id_cliente
         """)
         filas = cur.fetchall()
         for fila in filas:
-            fecha_registro = fila[5].strftime('%Y-%m-%d %H:%M:%S') if fila[5] else 'Automático'
+            fecha_registro = fila[5]
+            if hasattr(fecha_registro, 'strftime'):
+                fecha_registro = fecha_registro.strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                fecha_registro = 'Automático'
+
             nombre_completo = " ".join(filter(None, [fila[1], fila[2], fila[3]])).strip()
 
             clientes.append({
-                "id": str(fila[0]),
+                # Forzar str() por si pyodbc retorna el objeto UUID binario directo de SQL Server
+                "id": str(fila[0]), 
                 "nombre": nombre_completo,
-                "documento": fila[6] if fila[6] else 'S/D',
                 "telefono": fila[4] if fila[4] else '—',
-                "correo": fila[8] if fila[8] else '—',
                 "registro": fecha_registro,
-                "direccion": fila[7] if fila[7] else 'S/D'
+                "documento": str(fila[6]) if fila[6] else 'S/D',
+                "correo": fila[7] if fila[7] else '—',
+                "direccion": fila[8] if fila[8] else '—'
             })
     finally:
         if cur: cur.close()

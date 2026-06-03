@@ -19,29 +19,13 @@ try:
     # ==================================
     # EJEMPLO 1: CONSULTA SIMPLE
     # ==================================
-    cur.execute("SELECT * FROM cliente_publico;")
+    cur.execute("SELECT * FROM cola_pendientes;")
 
     filas = cur.fetchall()
 
-    print("\nCLIENTES:\n")
+    print("\nCOLA DE PENDIENTES:\n")
 
     for fila in filas:
-        print(fila)
-
-    # ==================================
-    # EJEMPLO 2: FILTRADO
-    # ==================================
-    cur.execute("""
-        SELECT *
-        FROM movimiento_lp
-        WHERE id_almacen = 1;
-    """)
-
-    filtrados = cur.fetchall()
-
-    print("\nMOVIMIENTOS FILTRADOS:\n")
-
-    for fila in filtrados:
         print(fila)
 
     cur.close()

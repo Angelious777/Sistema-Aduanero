@@ -7,29 +7,19 @@ window.CLIENTES_GLOBAL = [];
 document.addEventListener("DOMContentLoaded", function() {
     listarClientesReplicados();
     
-    // Filtros dinámicos reactivos con desestructuración segura
+    // Filtros dinámicos reactivos mapeados al JSON real
     document.getElementById("clt-buscar-nombre")?.addEventListener("input", renderizarClientesReplicados);
-    document.getElementById("clt-buscar-doc")?.addEventListener("input", renderizarClientesReplicados);
     document.getElementById("clt-buscar-tel")?.addEventListener("input", renderizarClientesReplicados);
 });
 
 // =========================================================
-// GESTIÓN DE MODALES (Control Seguro de Interfaz de Usuario)
-// =========================================================
-
-// =========================================================
-// GESTIÓN DE MODALES (Sincronizado con clases CSS Activas)
+// GESTIÓN DE MODALES (CONMUTACIÓN INMEDIATA)
 // =========================================================
 
 function abrirModalRegistroCliente() {
-    console.log("--> Intentando abrir el modal de registro...");
     const modal = document.getElementById("modal-registro-cliente");
     if (modal) {
-        // En lugar de usar .style.display, añadimos la clase que quita el pointer-events y sube la opacidad
         modal.classList.add("modal-active");
-        console.log("--> Modal desplegado e interactuable con éxito.");
-    } else {
-        console.error("❌ Error Crítico: No se localizó 'modal-registro-cliente' en el DOM actual.");
     }
 }
 
@@ -48,17 +38,16 @@ function cerrarModalVerCliente() {
 }
 
 // =========================================================
-// API QUERY & RENDERIZADO REPLICADO
+// API QUERY & RENDERIZADO REPLICADO LOCAL
 // =========================================================
 
 async function listarClientesReplicados() {
     const tbody = document.getElementById("tabla-clientes-replicados-body");
     if (!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">🔄 Cargando datos del nodo local...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">🔄 Cargando datos del nodo local...</td></tr>`;
 
-    // === DETECCIÓN DEL NODO ACTUAL (Igual a tu lógica de guardado) ===
     const path = window.location.pathname.toLowerCase().replace(/-/g, "_");
-    let nodoActual = "global"; // Por si estás en una vista de administración central
+    let nodoActual = "global"; 
 
     if (path.includes("la_paz") || path.includes("lp")) {
         nodoActual = "nodo_lp";
@@ -67,17 +56,18 @@ async function listarClientesReplicados() {
     }
 
     try {
-        // Enviamos el nodo como Query Parameter
+        // Consulta directa al puerto del coordinador
         const response = await fetch(`/api/clientes?nodo=${nodoActual}`);
         const resultado = await response.json();
+        
         if (resultado.success) {
             window.CLIENTES_GLOBAL = resultado.data || [];
             renderizarClientesReplicados();
         } else {
-            tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);">❌ Error: ${resultado.error}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger); text-align:center;">❌ Error: ${resultado.error}</td></tr>`;
         }
     } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--danger);">❌ Desconectado de la red distribuida local</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger); text-align:center;">❌ Desconectado de la red distribuida local</td></tr>`;
     }
 }
 
@@ -86,18 +76,17 @@ function renderizarClientesReplicados() {
     if (!tbody) return;
 
     const fNombre = document.getElementById("clt-buscar-nombre")?.value.trim().toLowerCase() || "";
-    const fDoc = document.getElementById("clt-buscar-doc")?.value.trim().toLowerCase() || "";
     const fTel = document.getElementById("clt-buscar-tel")?.value.trim().toLowerCase() || "";
 
     tbody.innerHTML = "";
     let filtrados = window.CLIENTES_GLOBAL || [];
 
+    // Filtros utilizando las llaves exactas de tu JSON ("nombre", "telefono")
     if (fNombre) filtrados = filtrados.filter(c => c.nombre && c.nombre.toLowerCase().includes(fNombre));
-    if (fDoc) filtrados = filtrados.filter(c => c.documento && c.documento.toLowerCase().includes(fDoc));
     if (fTel) filtrados = filtrados.filter(c => c.telefono && c.telefono.toLowerCase().includes(fTel));
 
     if (filtrados.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No hay registros unificados disponibles.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay registros locales en este fragmento.</td></tr>`;
         return;
     }
 
@@ -106,113 +95,76 @@ function renderizarClientesReplicados() {
         fila.innerHTML = `
             <td><code>${idx + 1}</code></td>
             <td><strong>${c.nombre}</strong></td>
-            <td><span style="background:#e0e7ff; padding:2px 6px; border-radius:4px;">${c.documento || 'S/D'}</span></td>
-            <td>${c.telefono || '—'}</td>
-            <td><small>${c.correo || '—'}</small></td>
+            <td><span style="background:#f1f5f9; padding:4px 8px; border-radius:4px; font-family:monospace;">${c.telefono || '—'}</span></td>
+            <td><small style="color:#64748b;">${c.registro || 'Automático'}</small></td>
             <td style="text-align: center;">
-                <button class="btn-secundario" style="padding: 4px 8px; font-size: 11px;" onclick='verFichaCliente(${JSON.stringify(c)})'>Ver Ficha</button>
+                <button class="btn-secundario btn-ver-ficha" style="padding: 4px 10px; font-size: 11px; cursor:pointer;">Ver Ficha</button>
             </td>
         `;
+        
+        // Listener seguro que inyecta el objeto mapeado de la fila
+        fila.querySelector(".btn-ver-ficha").addEventListener("click", () => verFichaCliente(c));
         tbody.appendChild(fila);
     });
 }
 
 // =========================================================
-// PROCESAMIENTO Y ENVÍO DEL JSON AL COORDINADOR BACKEND
+// VISUALIZACIÓN DINÁMICA DE LA FICHA (CON PARSEO DE DATOS)
 // =========================================================
-
-async function despacharRegistroClienteCoordinador() {
-    // Lectura defensiva de nodos para evitar congelamientos en consola
-    const elNombre = document.getElementById("reg-clt-nombre");
-    const elPaterno = document.getElementById("reg-clt-paterno");
-    const elMaterno = document.getElementById("reg-clt-materno");
-    const elDoc = document.getElementById("reg-clt-doc");
-    const elTel = document.getElementById("reg-clt-tel");
-    const elCorreo = document.getElementById("reg-clt-correo");
-    const elDireccion = document.getElementById("reg-clt-direccion");
-
-    const nombre = elNombre ? elNombre.value.trim() : "";
-    const apellidoPaterno = elPaterno ? elPaterno.value.trim() : "";
-    const apellidoMaterno = elMaterno ? elMaterno.value.trim() : "";
-    const documento = elDoc ? elDoc.value.trim() : "";
-    const telefono = elTel ? elTel.value.trim() : "";
-    const correo = elCorreo ? elCorreo.value.trim() : "";
-    const direccion = elDireccion ? elDireccion.value.trim() : "";
-
-    if (!nombre || !apellidoPaterno || !documento) {
-        alert("⚠️ Los campos Nombre, Apellido Paterno y Documento de Identidad son estrictamente obligatorios (Restricción SQL NOT NULL).");
-        return;
-    }
-
-    // === DETECCIÓN NORMALIZADA DE NODO REGIONAL ===
-    const path = window.location.pathname.toLowerCase();
-    let nodoDestino = "";
-
-    // Reemplazamos guiones medios por guiones bajos para estandarizar la búsqueda
-    const pathNormalizado = path.replace(/-/g, "_");
-
-    if (pathNormalizado.includes("la_paz") || pathNormalizado.includes("lp")) {
-        nodoDestino = "nodo_lp";
-    } else if (pathNormalizado.includes("santa_cruz") || pathNormalizado.includes("scz")) {
-        nodoDestino = "nodo_scz";
-    } else {
-        // Fallback por si usan el Badge visual del sistema
-        const badgeTexto = document.querySelector(".badge-nodo")?.textContent.toLowerCase() || "";
-        if (badgeTexto.includes("scz") || badgeTexto.includes("cruz")) {
-            nodoDestino = "nodo_scz";
-        } else if (badgeTexto.includes("lp") || badgeTexto.includes("paz")) {
-            nodoDestino = "nodo_lp";
-        } else {
-            console.error(`Detección fallida. Path original: "${path}"`);
-            alert(`❌ Error de Enrutamiento Regional:\nNo se pudo deducir el nodo desde la URL ("${path}").`);
-            return;
-        }
-    }
-    console.log(`--> Nodo asignado con éxito: ${nodoDestino}`);
-
-    const payload = {
-        documento_identidad: documento,
-        nombre: nombre,
-        apellido_paterno: apellidoPaterno,
-        apellido_materno: apellidoMaterno || null,
-        telefono: telefono || null,
-        direccion: direccion || null,
-        email: correo || null,
-        nodo: nodoDestino
-    };
-
-    try {
-        const response = await fetch('/api/cliente/crear', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        const resultado = await response.json();
-        if (response.ok && resultado.success) {
-            alert(`✅ Inserción Exitosa:\n${resultado.data.mensaje}`);
-            cerrarModalRegistroCliente();
-            document.getElementById("form-registro-cliente")?.reset();
-            listarClientesReplicados();
-        } else {
-            alert(`❌ Error del Motor Relacional:\n${resultado.error}`);
-        }
-    } catch (error) {
-        alert(`❌ Error crítico en red de nodos: ${error.message}`);
-    }
-}
 
 function verFichaCliente(cliente) {
     const modal = document.getElementById("modal-ver-cliente");
     const contenedor = document.getElementById("modal-ver-cliente-content");
-    if (!modal || !contenedor) return;
+    
+    if (!modal || !contenedor) {
+        console.error("❌ Elementos del modal no encontrados en el DOM.");
+        return;
+    }
+
+    let bloquePrivadoHTML = "";
+
+    // Si viene enmascarado por la autonomía regional de seguridad vertical
+    if (cliente.documento === "Consulte a Central" || cliente.correo === "Consulte a Central") {
+        bloquePrivadoHTML = `
+            <div style="background: #fdf2f2; border: 1px solid #fca5a5; padding: 12px; border-radius: 8px; margin-top: 12px; color: #991b1b; font-size: 13px; line-height: 1.5;">
+                🔒 <strong>Datos Privados Resguardados:</strong> Los campos Documento, Correo y Dirección pertenecen al fragmento de seguridad vertical regional y solo pueden auditarse con privilegios desde el Nodo Central.
+            </div>
+        `;
+    } else {
+        // Estructura limpia para datos abiertos unificados desde el Nodo Central Master
+        bloquePrivadoHTML = `
+            <div style="margin-top: 14px; border-top: 1px dashed #e2e8f0; padding-top: 14px;">
+                <p style="margin: 8px 0; color: #475569;"><strong>🪪 Documento Identidad:</strong><br>
+                    <code style="background: #e0e7ff; color: #3730a3; padding: 3px 8px; border-radius: 4px; font-family: monospace; font-size: 13px; display: inline-block; margin-top: 4px;">${cliente.documento || 'S/D'}</code>
+                </p>
+                <p style="margin: 12px 0; color: #475569;"><strong>✉️ Correo Electrónico:</strong><br>
+                    <span style="color:#0f172a; font-size: 14px;">${cliente.correo || '—'}</span>
+                </p>
+                <p style="margin: 12px 0; color: #475569;"><strong>🏠 Dirección Fiscal:</strong><br>
+                    <span style="color:#0f172a; font-size: 14px;">${cliente.direccion || '—'}</span>
+                </p>
+            </div>
+        `;
+    }
+
+    // Volcado de datos generales en el contenedor
     contenedor.innerHTML = `
-        <p><strong>📍 Cliente / Razón Social:</strong><br>${cliente.nombre}</p>
-        <p><strong>🪪 Documento Identidad:</strong><br><code>${cliente.documento}</code></p>
-        <p><strong>📞 Teléfono:</strong><br>${cliente.telefono || '—'}</p>
-        <p><strong>✉️ Correo Electrónico:</strong><br>${cliente.correo || '—'}</p>
-        <p><strong>🏠 Dirección Fiscal:</strong><br>${cliente.direccion || 'No visible en este fragmento'}</p>
-        <p><strong>📅 Registro de Auditoría:</strong><br><small>${cliente.registro || 'Automático'}</small></p>
+        <div style="font-family: system-ui, sans-serif; font-size: 14px; color: #1e293b;">
+            <p style="margin: 8px 0; color: #475569;"><strong>📍 Cliente / Razón Social:</strong><br>
+                <span style="color:#0f172a; font-weight:600; font-size: 16px;">${cliente.nombre}</span>
+            </p>
+            <p style="margin: 12px 0; color: #475569;"><strong>📞 Teléfono de Contacto:</strong><br>
+                <span style="color:#0f172a; font-size: 14px; font-family: monospace;">${cliente.telefono || '—'}</span>
+            </p>
+            <p style="margin: 12px 0; color: #475569;"><strong>📅 Registro de Auditoría (ID):</strong><br>
+                <small style="color:#64748b; display:block;">Fecha Alta: ${cliente.registro || 'Automático'}</small>
+                <small style="color:#94a3b8; font-family: monospace; font-size: 11px; display:block; margin-top: 2px;">UUID: ${cliente.id || '—'}</small>
+            </p>
+            ${bloquePrivadoHTML}
+        </div>
     `;
-    modal.style.setProperty("display", "flex", "important");
+
+    // CAMBIO CRUCIAL: Añade la clase operativa. 
+    // Recuerda que en tu CSS debes tener: .modal-overlay.modal-active { display: flex !important; opacity: 1 !important; }
+    modal.classList.add("modal-active");
 }

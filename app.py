@@ -7,10 +7,10 @@ from monitor import obtener_estado_nodos, obtener_metricas_nodo
 from metricas import obtener_metricas
 from dashboard import construir_dashboard
 from validaciones import validar_codigo
-from paquetes import obtener_todos_paquetes, obtener_paquetes_por_nodo, crear_paquete, obtener_tabla_paquete, obtener_tabla_movimiento, obtener_tabla_paquete_financiero, buscar_paquete
+from paquetes import obtener_todos_paquetes, obtener_paquetes_por_nodo, crear_paquete, obtener_tabla_paquete, obtener_tabla_movimiento, obtener_tabla_paquete_financiero, buscar_paquete, obtener_paquetes_coordinador_central, obtener_historial_movimientos_paquete
 from paquetes import obtener_paquetes_por_tipo_nodo
 from clientes import obtener_clientes_global, registrar_cliente_nodo  # <-- Asegúrate de tener o mapear esta función
-from movimientos import registrar_movimiento, obtener_movimientos_paquete, obtener_todos_movimientos, actualizar_estado_movimiento, obtener_historial_completo
+from movimientos import registrar_movimiento, obtener_movimientos_paquete, obtener_todos_movimientos, actualizar_estado_movimiento, obtener_historial_completo, obtener_movimientos_tabla_global
 from catalogo import obtener_fragmentos
 from respuestas import respuesta_ok, respuesta_error
 from logs.logger import registrar_log
@@ -95,11 +95,27 @@ def api_metricas_nodo(nodo):
 
 @app.route('/api/paquetes')
 def api_paquetes():
-    """Obtiene todos los paquetes del sistema"""
+    """Obtiene todos los paquetes reconstruidos desde el Nodo Central
+    mapeando almacenes, estados, clientes y ciudades de origen/destino.
+    """
     try:
-        paquetes = obtener_todos_paquetes()
-        return jsonify(respuesta_ok(paquetes))
+        paquetes = obtener_paquetes_coordinador_central()
+        return jsonify(respuesta_ok(paquetes)), 200
     except Exception as e:
+        registrar_log(f"❌ Error al reconstruir paquetes globales: {e}")
+        return jsonify(respuesta_error(str(e))), 500
+
+@app.route('/api/paquetes/historial/<id_paquete>')
+def api_historial_paquete_central(id_paquete):
+    """Devuelve la traza cronológica de movimientos de un paquete para la 
+    tabla de auditoría interna del modal en el Nodo Coordinador.
+    """
+    try:
+        
+        historial = obtener_historial_movimientos_paquete(id_paquete)
+        return jsonify(respuesta_ok(historial)), 200
+    except Exception as e:
+        registrar_log(f"❌ Error al consultar la traza del paquete {id_paquete}: {e}")
         return jsonify(respuesta_error(str(e))), 500
 
 
@@ -115,42 +131,53 @@ def api_paquetes_nodo(nodo):
 
 @app.route('/api/clientes', methods=['GET'])
 def api_listar_clientes():
+    """
+    Ruta federada que sirve los datos de clientes según el nodo solicitante.
+    Maneja la autonomía regional (LP/SCZ) y la unificación del Nodo Central.
+    """
+    nodo = request.args.get('nodo', 'global')
     try:
-        # Capturamos el nodo que envía el Frontend
-        nodo = request.args.get('nodo', 'global')
-        
         if nodo == "nodo_lp":
-            # Autonomía de La Paz (PostgreSQL)
+            # Autonomía de La Paz (PostgreSQL) - Retorna datos públicos locales
             datos_clientes = obtener_clientes_local_lp()
             
         elif nodo == "nodo_scz":
-            # Autonomía de Santa Cruz (SQL Server Regional)
+            # Autonomía de Santa Cruz (SQL Server Regional) - Retorna datos públicos locales
             datos_clientes = obtener_clientes_local_scz()
             
         else:
-            # Autonomía del Nodo Central (SQL Server Master con JOIN vertical)
+            # Autonomía del Nodo Central (SQL Server Master unificado con INNER JOIN)
             datos_clientes = obtener_clientes_local_central()
             
         return jsonify({"success": True, "data": datos_clientes}), 200
-    except Exception as e:
-        return jsonify({"success": False, "error": f"Error al consultar el nodo {nodo}: {str(e)}"}), 500
-
-
-
-@app.route('/api/paquete/buscar/<codigo>')
-def api_buscar_paquete(codigo):
-    """Busca un paquete por código"""
-    try:
-        if not validar_codigo(codigo):
-            return jsonify(respuesta_error("Código de paquete inválido")), 400
         
+    except Exception as e:
+        return jsonify({
+            "success": False, 
+            "error": f"Error al consultar la infraestructura distribuida en el nodo '{nodo}': {str(e)}"
+        }), 500
+
+
+@app.route('/api/paquete/buscar/<codigo>', methods=['GET'])
+def api_buscar_paquete(codigo):
+    """
+    Busca un paquete por código de rastreo único (Ej: PK-LP-2026-001).
+    Valida la nomenclatura y consulta los fragmentos horizontales/verticales.
+    """
+    try:
+        # Validación de nomenclatura formal del paquete
+        if not validar_codigo(codigo):
+            return jsonify(respuesta_error("Código de paquete inválido o formato incorrecto")), 400
+        
+        # Recuperación del diccionario de datos del paquete
         paquete = buscar_paquete(codigo)
         if not paquete:
-            return jsonify(respuesta_error("Paquete no encontrado")), 404
+            return jsonify(respuesta_error(f"El paquete con código '{codigo}' no fue localizado en ningún nodo")), 404
         
-        return jsonify(respuesta_ok(paquete))
+        return jsonify(respuesta_ok(paquete)), 200
+        
     except Exception as e:
-        return jsonify(respuesta_error(str(e))), 500
+        return jsonify(respuesta_error(f"Fallo crítico en el motor de búsqueda federada: {str(e)}")), 500
 
 
 @app.route('/api/tabla/paquete/<nodo>')
@@ -322,6 +349,12 @@ def api_crear_cliente():
 # ===================================
 # ENDPOINTS DE MOVIMIENTOS
 # ===================================
+
+@app.route('/api/movimientos', methods=['GET'])
+def api_movimientos_globales():
+    nodo = request.args.get('nodo', 'global')
+    datos = obtener_movimientos_tabla_global(nodo_filtro=nodo)
+    return jsonify({"success": True, "data": datos})
 
 @app.route('/api/movimientos/<nodo>')
 def api_movimientos_nodo(nodo):
@@ -664,6 +697,9 @@ def api_insertar_movimiento_local():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+
 
 
 if __name__ == '__main__':

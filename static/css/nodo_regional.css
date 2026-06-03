@@ -144,11 +144,13 @@ body {
    4. CONTENIDO PRINCIPAL, TOPBAR Y VISTAS
    ========================================================================== */
 .contenido-principal {
+    margin-left: 0 !important;
     flex-grow: 1;
     height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-width: 0;              
 }
 
 .topbar-panel {
@@ -192,9 +194,9 @@ body {
 .contenedor-vistas-dinamicas {
     flex-grow: 1;
     padding: 40px;
-    overflow-y: auto; /* Permite scroll exclusivo de formularios/tablas */
-    /* max-width: 1400px; */
+    overflow-y: auto;
     width: 100%;
+    max-width: none !important; 
 }
 
 /* Control de secciones SPA */

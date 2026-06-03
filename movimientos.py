@@ -2,7 +2,7 @@
 # OPERACIONES DE MOVIMIENTOS
 # -----------------------------------
 
-from conexiones import conectar_lp, conectar_scz
+from conexiones import conectar_lp, conectar_scz, conectar_central
 from logs.logger import registrar_log
 from datetime import datetime
 
@@ -206,3 +206,57 @@ def obtener_historial_completo(codigo_paquete):
     historial.sort(key=lambda x: x['fecha'])
     
     return historial
+
+
+def obtener_movimientos_tabla_global(nodo_filtro=None):
+    """
+    Consulta directamente la tabla física MOVIMIENTO_GLOBAL en el Nodo Central
+    cruza con paquetes y almacenes para el reporte consolidado.
+    """
+    movimientos = []
+    try:
+        conn = conectar_central() # Conexión a la BD Central
+        cur = conn.cursor()
+        
+        # Query optimizado con JOINs sobre la tabla física central
+        query = """
+            SELECT 
+                mg.fecha_movimiento,
+                p.codigo_rastreo,
+                mg.observacion AS estado_accion,
+                a.nombre AS ubicacion,
+                a.ciudad AS nodo_origen
+            FROM MOVIMIENTO_GLOBAL mg
+            INNER JOIN PAQUETE_GLOBAL p ON mg.id_paquete = p.id_paquete
+            INNER JOIN ALMACEN a ON mg.id_almacen = a.id_almacen
+        """
+        
+        # Si el usuario filtra por un nodo específico (ej: La Paz o Santa Cruz)
+        if nodo_filtro and nodo_filtro != 'global':
+            if nodo_filtro == 'nodo_lp':
+                query += " WHERE a.departamento = 'La Paz'"
+            elif nodo_filtro == 'nodo_scz':
+                query += " WHERE a.departamento = 'Santa Cruz'"
+                
+        query += " ORDER BY mg.fecha_movimiento DESC"
+        
+        cur.execute(query)
+        filas = cur.fetchall()
+        
+        for fila in filas:
+            # Identificar el fragmento/origen según el departamento del almacén
+            fragmento = "NODO_LA_PAZ (PostgreSQL)" if fila[4] == "La Paz" else "NODO_SANTA_CRUZ (SQL Server)"
+            
+            movimientos.append({
+                "fecha": fila[0].strftime("%Y-%m-%d %H:%M:%S") if fila[0] else "S/F",
+                "codigo": fila[1] if fila[1] else "S/C",
+                "accion": fila[2] if fila[2] else "PROCESADO",
+                "ubicacion": fila[3] if fila[3] else "Almacén Central",
+                "fragmento": fragmento
+            })
+            
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"❌ Error consultando MOVIMIENTO_GLOBAL: {e}")
+    return movimientos

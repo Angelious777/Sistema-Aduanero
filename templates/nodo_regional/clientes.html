@@ -11,9 +11,8 @@
             </button>
             <button class="btn-secundario" onclick="listarClientesReplicados()">Actualizar Lista</button>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <input type="text" id="clt-buscar-nombre" placeholder="Filtrar por Nombre / Razón Social..." style="padding: 10px; border: 1px solid var(--borde); border-radius: 6px;">
-            <input type="text" id="clt-buscar-doc" placeholder="Filtrar por Documento..." style="padding: 10px; border: 1px solid var(--borde); border-radius: 6px;">
             <input type="text" id="clt-buscar-tel" placeholder="Filtrar por Teléfono..." style="padding: 10px; border: 1px solid var(--borde); border-radius: 6px;">
         </div>
     </div>
@@ -23,12 +22,11 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Nombre Completo</th>
-                        <th>Documento</th>
-                        <th>Teléfono</th>
-                        <th>Correo Electrónico</th>
-                        <th style="text-align: center;">Acciones</th>
+                        <th style="width: 60px;">N°</th>
+                        <th>Nombre Completo / Razón Social</th>
+                        <th>Teléfono de Contacto</th>
+                        <th>Fecha de Registro</th>
+                        <th style="text-align: center; width: 120px;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-clientes-replicados-body"></tbody>
@@ -90,7 +88,7 @@
             <div class="modal-footer-aduanero">
                 <button type="button" class="btn-danger" style="background-color: var(--gris-medio); border-color: var(--gris-medio);" onclick="cerrarModalRegistroCliente()">Cancelar</button>
                 <button type="button" class="btn-secundario" onclick="document.getElementById('form-registro-cliente').reset()">Limpiar</button>
-                <button type="button" class="btn-primario" onclick="despacharRegistroClienteCoordinador()">Registrar Cliente</button>
+                <button type="button" class="button btn-primario" onclick="despacharRegistroClienteCoordinador()">Registrar Cliente</button>
             </div>
         </div>
     </div>
