@@ -19,7 +19,7 @@ try:
     # ==================================
     # EJEMPLO 1: CONSULTA SIMPLE
     # ==================================
-    cur.execute("SELECT * FROM cliente_publico;")
+    cur.execute("SELECT * FROM paquete_operativo_lp;")
 
     filas = cur.fetchall()
 

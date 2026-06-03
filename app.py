@@ -2,14 +2,14 @@
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from consultas import obtener_trazabilidad
-from sincronizacion import sincronizar_clientes_master
+from sincronizacion import sincronizar_clientes_master, sincronizar_estados_master
 from actualizaciones import actualizar_estado
 from monitor import obtener_estado_nodos
 from metricas import obtener_metricas, obtener_metricas_nodo
 from dashboard import construir_dashboard
 from validaciones import validar_codigo
 from paquetes import obtener_todos_paquetes, obtener_paquetes_por_nodo, crear_paquete, obtener_tabla_paquete, obtener_tabla_movimiento, obtener_tabla_paquete_financiero, buscar_paquete, obtener_paquetes_coordinador_central, obtener_historial_movimientos_paquete
-from paquetes import obtener_paquetes_por_tipo_nodo, actualizar_estado_distribuido
+from paquetes import obtener_paquetes_por_tipo_nodo, actualizar_estado_distribuido, insertar_en_central
 from clientes import obtener_clientes_global, registrar_cliente_nodo  # <-- Asegúrate de tener o mapear esta función
 from movimientos import registrar_movimiento, obtener_movimientos_paquete, obtener_todos_movimientos, actualizar_estado_movimiento, obtener_historial_completo, obtener_movimientos_tabla_global
 from catalogo import obtener_fragmentos
@@ -220,23 +220,87 @@ def api_buscar_paquete(codigo):
 
 @app.route('/api/paquete/actualizar-estado', methods=['PUT'])
 def api_actualizar_estado_paquete():
-    data = request.json or {}
-    codigo = data.get('codigo')
-    nuevo_estado = data.get('estado')
-    nodo = data.get('nodo')
-
-    if not codigo or not nuevo_estado or not nodo:
-        return jsonify({"success": False, "error": "Faltan parámetros obligatorios (codigo, estado, nodo)."}), 400
-
     try:
-        # Invocamos la lógica distribuida para actualizar el estado en los nodos que correspondan
-        exito = actualizar_estado_distribuido(codigo, nuevo_estado, nodo)
-        if exito:
-            return jsonify({"success": True, "mensaje": "Estado sincronizado en el clúster."}), 200
-        return jsonify({"success": False, "error": "No se pudo actualizar el estado en los fragmentos definidos."}), 500
-    except Exception as e:
-        return jsonify({"success": False, "error": f"Error en transacción de rampa: {str(e)}"}), 500
+        data = request.json
+        id_pkt = data.get('id_paquete')     # Recibe el UUID/GUID
+        nuevo_estado = data.get('id_estado') # Recibe el Int (1 al 5)
+        nodo_actual = data.get('nodo')       # Nodo desde el que se envía la petición
 
+        # 1. Determinar cuál es el nodo origen y cuál el nodo destino
+        # Consultamos el id_ruta del paquete en el nodo que hace la petición
+        id_ruta = None
+        if nodo_actual == "santa_cruz":
+            conn_origen = conectar_scz()
+            cursor_origen = conn_origen.cursor()
+            cursor_origen.execute("SELECT id_ruta FROM PAQUETE_OPERATIVO_SCZ WHERE id_paquete = ?", (id_pkt,))
+            fila = cursor_origen.fetchone()
+            if fila: id_ruta = fila[0]
+            cursor_origen.close()
+            conn_origen.close()
+        else:
+            conn_origen = conectar_lp()
+            cursor_origen = conn_origen.cursor()
+            cursor_origen.execute('SELECT id_ruta FROM "paquete_operativo_lp" WHERE id_paquete = %s', (id_pkt,))
+            fila = cursor_origen.fetchone()
+            if fila: id_ruta = fila[0]
+            cursor_origen.close()
+            conn_origen.close()
+
+        # Si el paquete no se encuentra en el nodo actual, cancelamos para evitar inconsistencias
+        if id_ruta is None:
+            return jsonify({"success": False, "error": "No se encontró el paquete en el nodo origen para determinar la ruta"}), 404
+
+        # Deducir el nodo destino basándonos en tu lógica de negocio de rutas:
+        # Ruta 1: LP -> SCZ (Destino Santa Cruz)
+        # Ruta 2: SCZ -> LP (Destino La Paz)
+        nodo_destino = "santa_cruz" if id_ruta == 1 else "la_paz"
+
+        # 2. EJECUTAR EL UPDATE EN EL NODO ACTUAL (Origen)
+        if nodo_actual == "santa_cruz":
+            conn_act = conectar_scz()
+            cursor_act = conn_act.cursor()
+            cursor_act.execute("UPDATE PAQUETE_OPERATIVO_SCZ SET id_estado = ? WHERE id_paquete = ?", (nuevo_estado, id_pkt))
+        else:
+            conn_act = conectar_lp()
+            cursor_act = conn_act.cursor()
+            cursor_act.execute('UPDATE "paquete_operativo_lp" SET id_estado = %s WHERE id_paquete = %s', (nuevo_estado, id_pkt))
+        conn_act.commit()
+        cursor_act.close()
+        conn_act.close()
+
+        # 3. EJECUTAR EL UPDATE EN EL NODO DESTINO (Si es diferente al nodo actual)
+        if nodo_actual != nodo_destino:
+            try:
+                if nodo_destino == "santa_cruz":
+                    conn_dest = conectar_scz()
+                    cursor_dest = conn_dest.cursor()
+                    cursor_dest.execute("UPDATE PAQUETE_OPERATIVO_SCZ SET id_estado = ? WHERE id_paquete = ?", (nuevo_estado, id_pkt))
+                else:
+                    conn_dest = conectar_lp()
+                    cursor_dest = conn_dest.cursor()
+                    cursor_dest.execute('UPDATE "paquete_operativo_lp" SET id_estado = %s WHERE id_paquete = %s', (nuevo_estado, id_pkt))
+                conn_dest.commit()
+                cursor_dest.close()
+                conn_dest.close()
+            except Exception as dest_err:
+                # Al ser un entorno distribuido, registramos si el otro nodo regional está caído temporalmente
+                print(f"⚠️ Alerta: Nodo destino ({nodo_destino}) inaccesible para actualización: {dest_err}")
+
+        # 4. Replicar la actualización al Nodo Central de control global (Tu código original intacto)
+        try:
+            conn_cen = conectar_central()
+            cursor_cen = conn_cen.cursor()
+            cursor_cen.execute("UPDATE PAQUETE_GLOBAL SET id_estado = ? WHERE id_paquete = ?", (nuevo_estado, id_pkt))
+            conn_cen.commit()
+            cursor_cen.close()
+            conn_cen.close()
+        except Exception as cen_err:
+            print(f"⚠️ Alerta: Nodo Central inaccesible para replicación asíncrona: {cen_err}")
+
+        return jsonify({"success": True, "mensaje": "Estado actualizado con éxito en el clúster"}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/tabla/paquete/<nodo>')
 def api_tabla_paquete(nodo):
@@ -289,45 +353,65 @@ def api_paquetes_por_tipo(nodo):
         return jsonify(respuesta_error(str(e))), 500
 
 
-@app.route('/api/paquete/crear', methods=['POST']) 
+@app.route('/api/paquete/crear', methods=['POST'])
 def api_crear_paquete():
-    data = request.json or {}
-    
-    codigo = data.get('codigo')
-    destino = data.get('id_ruta')       
-    prioridad = data.get('prioridad')
-    nodo = data.get('nodo')             
-    remitente = data.get('remitente')   
-    destinatario = data.get('destinatario') # Captura del destinatario mapeada desde JS
-    descripcion = data.get('descripcion', '').strip()
-
+    """
+    Orquesta la creación de un paquete de manera distribuida.
+    Garantiza: Central (Global), Nodo Origen (Operativo + Financiero), Nodo Destino (Solo Operativo)
+    """
     try:
-        peso_conv = float(data.get('peso', 1.0))
-        volumen_conv = float(data.get('volumen', 1.0))
-        valor_conv = float(data.get('valor_declarado', 0.0))
-        seguro_conv = float(data.get('seguro', 0.0))
-        costo_conv = float(data.get('costo', 0.0))
-    except (ValueError, TypeError) as err:
-        return jsonify({"success": False, "error": f"Error de casteo numérico: {str(err)}"}), 400
-
-    try:
-        # Firma extendida con remitente y destinatario separados hacia las funciones de base de datos
-        exito = crear_paquete(
-            codigo=codigo, destino=destino, prioridad=prioridad, nodo=nodo,
-            remitente=remitente, destinatario=destinatario, descripcion=descripcion,
-            peso=peso_conv, volumen=volumen_conv, valor_declarado=valor_conv,
-            seguro=seguro_conv, costo_envio=costo_conv
-        )
+        data = request.json or {}
         
-        if exito:
-            return jsonify({
-                "success": True, 
-                "data": {"mensaje": "Paquete registrado de forma síncrona en fragmentos operativos y financieros."}
-            }), 200
-        return jsonify({"success": False, "error": "El motor distribuido rechazó la transacción."}), 500
+        # 1. Extracción y Normalización de Datos del Payload JS
+        codigo = data.get('codigo')
+        id_ruta = data.get('id_ruta')       # Viaja como el destino/ID de ruta en el ruteador
+        prioridad = data.get('prioridad', 'Normal')
+        nodo_origen = data.get('nodo')      # 'lp', 'scz', 'la_paz', etc.
+        
+        remitente = data.get('id_cliente_remitente')
+        destinatario = data.get('id_cliente_destinatario')
+        descripcion = data.get('descripcion', '')
+        
+        # 2. Casteo Seguro de Magnitudes Físicas y Financieras (Evita caídas por strings vacíos)
+        peso = float(data.get('peso', 0.0))
+        volumen = float(data.get('volumen', 0.0))
+        valor_declarado = float(data.get('valor_declarado', 0.0))
+        seguro = float(data.get('seguro', 0.0))
+        costo_envio = float(data.get('costo', 0.0)) # Mapea 'costo' del JS a 'costo_envio'
 
-    except Exception as error_motor:
-        return jsonify({"success": False, "error": f"Falla de consistencia en el clúster: {str(error_motor)}"}), 500
+        # Validation de Campos Not Null
+        if not all([codigo, id_ruta, nodo_origen, remitente, destinatario]):
+            return jsonify(respuesta_error("Faltan campos obligatorios para procesar la inserción fragmentada.")), 400
+
+        # 3. Delegación al Orquestador de paquetes.py
+        # Esta única llamada procesa la transacción en todo el Clúster Híbrido
+        exito = crear_paquete(
+            codigo=codigo,
+            destino=id_ruta,
+            prioridad=prioridad,
+            nodo=nodo_origen,
+            remitente=remitente,
+            destinatario=destinatario,
+            descripcion=descripcion,
+            peso=peso,
+            volumen=volumen,
+            valor_declarado=valor_declarado,
+            seguro=seguro,
+            costo_envio=costo_envio
+        )
+
+        if exito:
+            registrar_log(f"📦 Transacción Distribuida Exitosa. Paquete {codigo} replicado parcialmente.")
+            return jsonify(respuesta_ok({"mensaje": "Transacción distribuida realizada con éxito en el clúster"})), 200
+        else:
+            return jsonify(respuesta_error("El orquestador no pudo completar las inserciones regionales.")), 500
+
+    except ValueError as val_err:
+        registrar_log(f"⚠️ Error de topología: {val_err}")
+        return jsonify(respuesta_error(str(val_err))), 422
+    except Exception as e:
+        registrar_log(f"❌ Fallo crítico en el clúster al crear paquete: {e}")
+        return jsonify(respuesta_error(f"Fallo crítico en el motor de persistencia: {str(e)}")), 500
 
 
 # ===================================
@@ -726,7 +810,134 @@ def api_insertar_movimiento_local():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route('/api/estados', methods=['GET'])
+def api_listar_estados():
+    """
+    Obtiene el catálogo de estados desde el nodo central o regional 
+    para poblar dinámicamente las vistas y modales.
+    """
+    try:
+        # Reutilizamos la conexión al central ya que replica el catálogo
+        conn = conectar_central()
+        cursor = conn.cursor()
+        cursor.execute("SELECT id_estado, nombre FROM estado ORDER BY id_estado")
+        
+        estados = []
+        for row in cursor.fetchall():
+            estados.append({
+                "id_estado": int(row[0]),
+                "nombre": str(row[1])
+            })
+            
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True, "data": estados}), 200
+    except Exception as e:
+        registrar_log(f"❌ Error al consultar catálogo de estados: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
+
+@app.route('/api/estado/crear', methods=['POST'])
+def api_crear_estado():
+    try:
+        data = request.json
+        id_estado = data.get('id_estado')
+        nombre = data.get('nombre')
+
+        if not id_estado or not nombre:
+            return jsonify({"success": False, "error": "Faltan parámetros requeridos"}), 400
+
+        # 1. Insertar en el Nodo Central (Fuente de Verdad)
+        conn_cen = conectar_central()
+        cursor_cen = conn_cen.cursor()
+        cursor_cen.execute("INSERT INTO estado (id_estado, nombre) VALUES (?, ?)", (id_estado, nombre))
+        conn_cen.commit()
+        cursor_cen.close()
+        conn_cen.close()
+
+        # 2. Replicación Inmediata a Nodos Regionales (Opcional/Síncrona)
+        # Para evitar que dependas de que los nodos estén 100% online en este segundo, 
+        # envolvemos la inserción directa en bloques try-catch individuales.
+        try:
+            conn_lp = conectar_lp()
+            cursor_lp = conn_lp.cursor()
+            cursor_lp.execute('INSERT INTO estado (id_estado, nombre) VALUES (%s, %s)', (id_estado, nombre))
+            conn_lp.commit()
+            cursor_lp.close()
+            conn_lp.close()
+        except Exception as e:
+            registrar_log(f"⚠️ Réplica diferida en La Paz para ID {id_estado}: {e}")
+
+        try:
+            conn_scz = conectar_scz()
+            cursor_scz = conn_scz.cursor()
+            cursor_scz.execute("INSERT INTO ESTADO (id_estado, nombre) VALUES (?, ?)", (id_estado, nombre))
+            conn_scz.commit()
+            cursor_scz.close()
+            conn_scz.close()
+        except Exception as e:
+            registrar_log(f"⚠️ Réplica diferida en Santa Cruz para ID {id_estado}: {e}")
+
+        return jsonify({"success": True, "mensaje": "Estado catalogado con éxito"}), 201
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/estado/eliminar/<int:id_estado>', methods=['DELETE'])
+def api_eliminar_estado(id_estado):
+    try:
+        # Eliminamos secuencialmente de todas las fuentes empezando por el Central
+        conn_cen = conectar_central()
+        cursor_cen = conn_cen.cursor()
+        cursor_cen.execute("DELETE FROM estado WHERE id_estado = ?", (id_estado,))
+        conn_cen.commit()
+        cursor_cen.close()
+        conn_cen.close()
+
+        # Limpiamos los fragmentos regionales
+        try:
+            conn_lp = conectar_lp()
+            cursor_lp = conn_lp.cursor()
+            cursor_lp.execute('DELETE FROM estado WHERE id_estado = %s', (id_estado,))
+            conn_lp.commit()
+            cursor_lp.close()
+            conn_lp.close()
+        except Exception as e: registrar_log(f"No se pudo limpiar ID {id_estado} en LP: {e}")
+
+        try:
+            conn_scz = conectar_scz()
+            cursor_scz = conn_scz.cursor()
+            cursor_scz.execute("DELETE FROM ESTADO WHERE id_estado = ?", (id_estado,))
+            conn_scz.commit()
+            cursor_scz.close()
+            conn_scz.close()
+        except Exception as e: registrar_log(f"No se pudo limpiar ID {id_estado} en SCZ: {e}")
+
+        return jsonify({"success": True, "mensaje": "Estado eliminado del clúster"}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/estados/sincronizar-cascada', methods=['POST'])
+def api_sincronizar_estados_cascada():
+    """
+    Ruta que manda a llamar la reconciliación analítica estructurada 
+    dentro de sincronizacion.py para el catálogo de estados.
+    """
+    resultado = sincronizar_estados_master()
+    
+    if resultado.get("success"):
+        # Construimos un desglose visual amigable basado en tu reporte por tuplas
+        resumen_lineas = []
+        for nodo, info in resultado["reporte"].items():
+            resumen_lineas.append(
+                f"📌 {nodo.upper()}: {info['estado']} (Ins: {info['inserciones']}, Mod: {info['modificaciones']}, Del: {info['eliminaciones']})"
+            )
+        mensaje_final = f"{resultado['nota']}\n" + "\n".join(resumen_lineas)
+        
+        return jsonify({"success": True, "mensaje": mensaje_final}), 200
+    else:
+        return jsonify({"success": False, "error": resultado.get("error", "Error desconocido de clúster")}), 500
 
 
 if __name__ == '__main__':

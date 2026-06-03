@@ -1,3 +1,4 @@
+// paquetes_central.js
 document.addEventListener("DOMContentLoaded", () => {
     let listaPaquetesGlobal = [];
 
@@ -8,10 +9,27 @@ document.addEventListener("DOMContentLoaded", () => {
     const filtroEstado = document.getElementById("filtro-estado-paquete");
     const filtroOrigen = document.getElementById("filtro-ciudad-origen");
     const filtroDestino = document.getElementById("filtro-ciudad-destino");
-
+    const btnActualizar = document.getElementById("btn-actualizar-paquetes");
     // Modal (Mapeado con el ID correcto del HTML)
     const modal = document.getElementById("modal-detalle-paquete");
     const btnCerrarModal = document.getElementById("btn-cerrar-modal-paquete");
+
+    if (btnActualizar) {
+        btnActualizar.addEventListener("click", async () => {
+            btnActualizar.textContent = "⏳ Cargando...";
+            btnActualizar.disabled = true;
+
+            filtroCodigo.value = "";
+            filtroEstado.value = "";
+            filtroOrigen.value = "";
+            filtroDestino.value = "";
+
+            await cargarPaquetes();
+
+            btnActualizar.textContent = "🔄 Actualizar";
+            btnActualizar.disabled = false;
+        });
+    }
 
     // Cargar datos al iniciar
     async function cargarPaquetes() {
@@ -157,6 +175,26 @@ document.addEventListener("DOMContentLoaded", () => {
             modal.classList.remove("open");
         }
     }
+
+
+    btnActualizar.addEventListener("click", async () => {
+        // Cambio visual de carga
+        btnActualizar.textContent = "⏳ Cargando...";
+        btnActualizar.disabled = true;
+
+        // Resetear filtros para ver el panorama completo al actualizar
+        filtroCodigo.value = "";
+        filtroEstado.value = "";
+        filtroOrigen.value = "";
+        filtroDestino.value = "";
+
+        // Volver a consultar al backend
+        await cargarPaquetes();
+
+        // Restaurar estado del botón
+        btnActualizar.textContent = "🔄 Actualizar";
+        btnActualizar.disabled = false;
+    });
 
     // Carga inicial
     cargarPaquetes();

@@ -1,3 +1,4 @@
+# paquetes.py
 # ------------------------------------------------------------------
 # OPERACIONES DE PAQUETES (VERSION ADAPTADA AL FORMATO DE LOS NODOS)
 # ------------------------------------------------------------------
@@ -74,135 +75,139 @@ def crear_paquete(codigo, destino, prioridad, nodo, remitente, destinatario, des
     id_paquete = str(uuid.uuid4())
     nodo_origen = str(nodo).strip().lower()
     
-    # Asegúrate de mapear estas sub-funciones internas en tus scripts de inserción 
-    # para que acepten tanto 'remitente' como 'destinatario' en los INSERT INTO de SQL.
-    insertar_en_central(id_paquete, codigo, destino, prioridad, remitente, destinatario, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
+    id_estado = 1          # 1 = Registrado / Inicial
+    id_almacen_actual = 1   # Almacén de despacho por defecto
+    id_ruta = int(destino)  # El parámetro 'destino' viaja desde el front como el ID de la ruta
+
+    # 1. ESQUEMA GLOBAL: Inserción en el Nodo Central (Fuente de verdad unificada)
+    insertar_en_central(
+        id_paquete, codigo, remitente, destinatario, id_estado, id_ruta, 
+        id_almacen_actual, peso, volumen, descripcion, prioridad, 
+        valor_declarado, seguro, costo_envio
+    )
         
+    # 2. ESQUEMA REGIONAL: Inserción local y réplicas cruzadas selectivas
     if nodo_origen in ['lapaz', 'la_paz', 'lp']:
-        insertar_en_lp(id_paquete, codigo, destino, prioridad, remitente, destinatario, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
-    elif nodo_origen in ['santacruz', 'santa_cruz', 'scz']:
-        insertar_en_scz(id_paquete, codigo, destino, prioridad, remitente, destinatario, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
-    else:
-        raise ValueError(f"Nodo de origen '{nodo_origen}' no mapeado.")
+        # Origen La Paz: Guarda Operativo + Financiero localmente
+        insertar_en_lp(id_paquete, codigo, id_ruta, prioridad, remitente, destinatario, descripcion, peso, volumen, valor_declarado, seguro, costo_envio, id_estado, id_almacen_actual)
         
-    # Replicación cruzada parcial (Fragmento Operativo Inverso)
-    if nodo_origen not in ['lapaz', 'la_paz', 'lp']:
-        insertar_operativo_lp_solo(id_paquete, codigo, destino, prioridad, remitente, destinatario, descripcion, peso, volumen)
+        # Réplica Cruzada: El destino (Santa Cruz) SOLO recibe el fragmento Operativo para control de tránsito
+        insertar_operativo_scz_solo(id_paquete, codigo, id_ruta, prioridad, remitente, destinatario, descripcion, peso, volumen, id_estado, id_almacen_actual)
+        
+    elif nodo_origen in ['santacruz', 'santa_cruz', 'scz']:
+        # Origen Santa Cruz: Guarda Operativo + Financiero localmente
+        insertar_en_scz(id_paquete, codigo, id_ruta, prioridad, remitente, destinatario, descripcion, peso, volumen, valor_declarado, seguro, costo_envio, id_estado, id_almacen_actual)
+        
+        # Réplica Cruzada: El destino (La Paz) SOLO recibe el fragmento Operativo para control de tránsito
+        insertar_operativo_lp_solo(id_paquete, codigo, id_ruta, prioridad, remitente, destinatario, descripcion, peso, volumen, id_estado, id_almacen_actual)
     else:
-        insertar_operativo_scz_solo(id_paquete, codigo, destino, prioridad, remitente, destinatario, descripcion, peso, volumen)
-            
+        raise ValueError(f"Nodo de origen '{nodo_origen}' no mapeado en la topología de la red.")
+        
     return True
 
 
-def insertar_operativo_lp_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen):
-    """Inserta la parte operativa en PostgreSQL (LP) respetando las restricciones NOT NULL"""
+def insertar_operativo_lp_solo(id_paquete, codigo, id_ruta, prioridad, remitente, destinatario, descripcion, peso, volumen, id_estado=1, id_almacen_actual=1):
+    """Inserta estrictamente el Fragmento Operativo en PostgreSQL (La Paz)"""
     conn = conectar_lp()
-    cur = conn.cursor()
-    
-    id_cliente_destinatario = remitente  
-    id_estado = 1                        
-    id_almacen_actual = 1                 
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO "paquete_operativo_lp" 
+            (id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario, 
+             id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, prioridad) 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            id_paquete, codigo, remitente, destinatario,
+            id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, prioridad
+        ))
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
 
-    cur.execute("""
-        INSERT INTO paquete_operativo_lp 
-        (id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario, 
-         id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, prioridad) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """, (
-        id_paquete, codigo, remitente, id_cliente_destinatario,
-        id_estado, int(destino), id_almacen_actual, peso, volumen, descripcion, prioridad
-    ))
-    conn.commit()
-    cur.close()
-    conn.close()
-
-def insertar_en_lp(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio):
-    """Coordina la inserción fragmentada en La Paz"""
+def insertar_en_lp(id_paquete, codigo, id_ruta, prioridad, remitente, destinatario, descripcion, peso, volumen, valor_declarado, seguro, costo_envio, id_estado=1, id_almacen_actual=1):
+    """Coordina la inserción fragmentada completa en el Nodo de La Paz"""
     # 1. Fragmento Operativo
-    insertar_operativo_lp_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen)
+    insertar_operativo_lp_solo(id_paquete, codigo, id_ruta, prioridad, remitente, destinatario, descripcion, peso, volumen, id_estado, id_almacen_actual)
     
     # 2. Fragmento Financiero
     conn = conectar_lp()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO paquete_financiero_lp 
-        (id_paquete, valor_declarado, seguro, costo_envio) 
-        VALUES (%s, %s, %s, %s)
-    """, (id_paquete, valor_declarado, seguro, costo_envio))
-    conn.commit()
-    cur.close()
-    conn.close()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO "paquete_financiero_lp" 
+            (id_paquete, valor_declarado, seguro, costo_envio) 
+            VALUES (%s, %s, %s, %s)
+        """, (id_paquete, valor_declarado, seguro, costo_envio))
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
 
 
-def insertar_operativo_scz_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen):
-    """Inserta la parte operativa en SQL Server (SCZ) respetando las restricciones NOT NULL"""
+def insertar_operativo_scz_solo(id_paquete, codigo, id_ruta, prioridad, remitente, destinatario, descripcion, peso, volumen, id_estado=1, id_almacen_actual=1):
+    """Inserta estrictamente el Fragmento Operativo en SQL Server (Santa Cruz)"""
     conn = conectar_scz()
-    cur = conn.cursor()
-    
-    id_cliente_destinatario = remitente  
-    id_estado = 1                        
-    id_almacen_actual = 1                 
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO PAQUETE_OPERATIVO_SCZ 
+            (id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario, 
+             id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, prioridad) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            id_paquete, codigo, remitente, destinatario,
+            id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, prioridad
+        ))
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
 
-    cur.execute("""
-        INSERT INTO PAQUETE_OPERATIVO_SCZ 
-        (id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario, 
-         id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, prioridad) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        id_paquete, codigo, remitente, id_cliente_destinatario,
-        id_estado, int(destino), id_almacen_actual, peso, volumen, descripcion, prioridad
-    ))
-    conn.commit()
-    cur.close()
-    conn.close()
-
-def insertar_en_scz(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio):
-    """Coordina la inserción fragmentada en Santa Cruz"""
+def insertar_en_scz(id_paquete, codigo, id_ruta, prioridad, remitente, destinatario, descripcion, peso, volumen, valor_declarado, seguro, costo_envio, id_estado=1, id_almacen_actual=1):
+    """Coordina la inserción fragmentada completa en el Nodo de Santa Cruz"""
     # 1. Fragmento Operativo
-    insertar_operativo_scz_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen)
+    insertar_operativo_scz_solo(id_paquete, codigo, id_ruta, prioridad, remitente, destinatario, descripcion, peso, volumen, id_estado, id_almacen_actual)
     
     # 2. Fragmento Financiero
     conn = conectar_scz()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO PAQUETE_FINANCIERO_SCZ 
-        (id_paquete, valor_declarado, seguro, costo_envio) 
-        VALUES (?, ?, ?, ?)
-    """, (id_paquete, valor_declarado, seguro, costo_envio))
-    conn.commit()
-    cur.close()
-    conn.close()
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO PAQUETE_FINANCIERO_SCZ 
+            (id_paquete, valor_declarado, seguro, costo_envio) 
+            VALUES (?, ?, ?, ?)
+        """, (id_paquete, valor_declarado, seguro, costo_envio))
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
 
 
-def insertar_en_central(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio):
-    """Registra el paquete con su esquema completo en el Nodo Central (SQL Server)"""
+def insertar_en_central(id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario, id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, prioridad, valor_declarado, seguro, costo_envio):
+    """Inserta el registro unificado completo en la tabla PAQUETE_GLOBAL del nodo central"""
     try:
         conn = conectar_central()
-        cur = conn.cursor()
-        
-        # Valores por defecto requeridos para cumplir los NOT NULL de las FKs maestras en Central
-        id_cliente_destinatario = remitente  # Si el payload no trae destinatario, usamos el remitente
-        id_estado = 1                        # ID de estado 'Registrado'
-        id_almacen_actual = 1                 # ID del almacén inicial
-        
-        cur.execute("""
-            INSERT INTO PAQUETE_GLOBAL 
-            (id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario, 
-             id_estado, id_ruta, id_almacen_actual, peso, volumen, descripcion, 
-             prioridad, valor_declarado, seguro, costo_envio) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            id_paquete, codigo, remitente, id_cliente_destinatario,
-            id_estado, int(destino), id_almacen_actual, peso, volumen, descripcion,
-            prioridad, valor_declarado, seguro, costo_envio
-        ))
-        
+        cursor = conn.cursor()
+        query = """
+            INSERT INTO PAQUETE_GLOBAL (
+                id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario, 
+                id_estado, id_ruta, id_almacen_actual, peso, volumen, 
+                descripcion, prioridad, valor_declarado, seguro, costo_envio
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        valores = (
+            id_paquete, codigo_rastreo, id_cliente_remitente, id_cliente_destinatario,
+            id_estado, id_ruta, id_almacen_actual, peso, volumen,
+            descripcion, prioridad, valor_declarado, seguro, costo_envio
+        )
+        cursor.execute(query, valores)
         conn.commit()
-        cur.close()
+        cursor.close()
         conn.close()
         return True
     except Exception as e:
-        registrar_log(f"FALLO CRÍTICO: No se pudo registrar en Central: {e}")
+        registrar_log(f"❌ Error replicando en nodo central: {e}")
         raise e
 
 
@@ -321,37 +326,48 @@ def obtener_tabla_paquete_financiero(nodo):
 
 def obtener_paquetes_por_tipo_nodo(nodo):
     resultado = {"operativos": [], "financieros": []}
+    token = str(nodo).strip().lower()
+    
     try:
-        if nodo.lower() in ['lapaz', 'la_paz', 'lp']:
-            conn = conectar_central()
+        if token in ['lapaz', 'la_paz', 'lp']:
+            # 🟢 CORRECCIÓN: Conectar al nodo regional de La Paz (PostgreSQL)
+            conn = conectar_lp()
             cur = conn.cursor()
             
-            cur.execute("SELECT id_paquete, codigo_rastreo, descripcion, prioridad, id_ruta FROM PAQUETE_OPERATIVO_LP")
-            columnas = [desc[0] for desc in cur.description]
+            # 💡 SOLUCIÓN: Agregamos id_estado al SELECT
+            cur.execute('SELECT id_paquete, codigo_rastreo, descripcion, prioridad, id_ruta, id_estado FROM "paquete_operativo_lp"')
+            columnas = [desc[0].lower() for desc in cur.description] # Forzamos minúsculas para el mapeo JS
             resultado["operativos"] = [dict(zip(columnas, fila)) for fila in cur.fetchall()]
             
-            cur.execute("SELECT id_paquete, valor_declarado, seguro, costo_envio FROM PAQUETE_FINANCIERO_LP")
-            columnas_fi = [desc[0] for desc in cur.description]
+            cur.execute('SELECT id_paquete, valor_declarado, seguro, costo_envio FROM "paquete_financiero_lp"')
+            columnas_fi = [desc[0].lower() for desc in cur.description]
             resultado["financieros"] = [dict(zip(columnas_fi, fila)) for fila in cur.fetchall()]
             
             cur.close()
             conn.close()
-        else:
+            
+        elif token in ['santacruz', 'santa_cruz', 'scz']:
+            # 🔵 NODO SANTA CRUZ: Conectar al nodo regional SCZ (SQL Server)
             conn = conectar_scz()
             cur = conn.cursor()
 
-            cur.execute("SELECT id_paquete, codigo_rastreo, descripcion, prioridad, id_ruta FROM PAQUETE_OPERATIVO_SCZ")
-            columnas_op = [desc[0] for desc in cur.description]
+            # 💡 SOLUCIÓN: Agregamos id_estado al SELECT
+            cur.execute("SELECT id_paquete, codigo_rastreo, descripcion, prioridad, id_ruta, id_estado FROM PAQUETE_OPERATIVO_SCZ")
+            columnas_op = [desc[0].lower() for desc in cur.description]
             resultado["operativos"] = [dict(zip(columnas_op, fila)) for fila in cur.fetchall()]
 
             cur.execute("SELECT id_paquete, valor_declarado, seguro, costo_envio FROM PAQUETE_FINANCIERO_SCZ")
-            columnas_fi = [desc[0] for desc in cur.description]
+            columnas_fi = [desc[0].lower() for desc in cur.description]
             resultado["financieros"] = [dict(zip(columnas_fi, fila)) for fila in cur.fetchall()]
 
             cur.close()
             conn.close()
+            
+        else:
+            registrar_log(f"⚠️ Token de nodo no reconocido en el ruteador analítico: {nodo}")
+            
     except Exception as e:
-        registrar_log(f"Error en obtener_paquetes_por_tipo_nodo para {nodo}: {e}")
+        registrar_log(f"❌ Error en obtener_paquetes_por_tipo_nodo para {nodo}: {e}")
 
     return resultado
 

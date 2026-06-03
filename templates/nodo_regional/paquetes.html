@@ -79,16 +79,24 @@
                         <input type="text" id="reg-pkt-codigo" readonly style="background: var(--gris-claro); font-family: monospace; font-weight: bold; color: var(--azul-medio);">
                     </div>
 
-                    <div class="form-grupo-modal">
-                        <label for="reg-pkt-remitente">Remitente / Consignatario <span style="color:red;">*</span>:</label>
-                        <select id="reg-pkt-remitente" required style="width: 100%;">
-                            <option value="">🔄 Cargando catálogo unificado de clientes...</option>
-                        </select>
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <div class="form-grupo-modal" style="flex: 1; margin-bottom: 0;">
+                            <label for="reg-pkt-remitente">Cliente Remitente <span style="color:red;">*</span>:</label>
+                            <select id="reg-pkt-remitente" required style="width: 100%;">
+                                <option value="">🔄 Cargando...</option>
+                            </select>
+                        </div>
+                        <div class="form-grupo-modal" style="flex: 1; margin-bottom: 0;">
+                            <label for="reg-pkt-destinatario">Cliente Destinatario <span style="color:red;">*</span>:</label>
+                            <select id="reg-pkt-destinatario" required style="width: 100%;">
+                                <option value="">🔄 Cargando...</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                         <div class="form-grupo-modal" style="flex: 1; margin-bottom: 0;">
-                            <label for="reg-pkt-destino">Destino Final / Ruta <span style="color:red;">*</span>:</label>
+                            <label for="reg-pkt-destino">Ruta de Tránsito <span style="color:red;">*</span>:</label>
                             <select id="reg-pkt-destino" required style="width: 100%;">
                                 <option value="">🔄 Cargando rutas...</option>
                             </select>
@@ -133,7 +141,7 @@
 
                     <div class="form-grupo-modal">
                         <label for="reg-pkt-desc">Descripción General del Contenido:</label>
-                        <textarea id="reg-pkt-desc" rows="2" placeholder="Detalle de mercadería o documentación..."></textarea>
+                        <textarea id="reg-pkt-desc" rows="2" placeholder="Detalle de mercadería..."></textarea>
                     </div>
                 </form>
             </div>
@@ -151,8 +159,10 @@
                 <button class="btn-cerrar-modal" onclick="cerrarModalDetallePaquete()">&times;</button>
             </div>
             <div class="modal-body-aduanero">
+                <input type="hidden" id="dt-pkt-id-interno">
+                
                 <div style="background: var(--gris-claro); padding: 14px; border-radius: 6px; margin-bottom: 16px; font-size: 0.9rem; line-height: 1.6;">
-                    <p><strong>Destino Asignado:</strong> <span id="dt-pkt-destino">--</span></p>
+                    <p><strong>Ruta Asignada:</strong> <span id="dt-pkt-destino">--</span></p>
                     <p><strong>Prioridad Logística:</strong> <span id="dt-pkt-prioridad-txt">--</span></p>
                     <p><strong>Estado en Clúster:</strong> <span id="dt-pkt-estado-txt">--</span></p>
                     <p><strong>Descripción de Carga:</strong> <span id="dt-pkt-desc">--</span></p>
@@ -160,10 +170,7 @@
                 <div class="form-grupo-modal" style="border-top: 1px solid var(--borde); padding-top: 14px;">
                     <label for="dt-pkt-select-estado"><strong>Actualizar Estado en Rampa:</strong></label>
                     <select id="dt-pkt-select-estado" style="margin-top: 6px;">
-                        <option value="1">Registrado</option>
-                        <option value="2">En Tránsito</option>
-                        <option value="3">Retenido por Aduana</option>
-                        <option value="4">Entregado</option>
+                        <option value="">🔄 Cargando estados desde el motor...</option>
                     </select>
                 </div>
             </div>

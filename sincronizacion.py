@@ -163,3 +163,116 @@ def sincronizar_clientes_master():
         "reporte": reporte,
         "nota": "Reconciliación parcial realizada" if not all(n["estado"] == "ONLINE" for n in reporte.values()) else "Esclavos sincronizados"
     }
+
+
+def sincronizar_estados_master():
+    """
+    Sincroniza el catálogo ESTADO (Central) hacia las regiones de forma homogénea.
+    Tolerante a fallos de red y adaptado a las columnas reales del catálogo.
+    """
+    reporte = {}
+    
+    # 1. LEER LA VERDAD ABSOLUTA DESDE EL NODO CENTRAL
+    try:
+        conn_central = conectar_central()
+        cur_central = conn_central.cursor()
+        
+        cur_central.execute("SELECT id_estado, nombre FROM estado ORDER BY id_estado")
+        
+        estados_central = {}
+        for row in cur_central.fetchall():
+            id_int = int(row[0])
+            estados_central[id_int] = {
+                "id_estado": id_int,
+                "nombre": str(row[1]).strip()
+            }
+            
+        cur_central.close()
+        conn_central.close()
+    except Exception as e:
+        logger.error(f"🚨 CRÍTICO: Error en el query o conectividad del Nodo Central (Estados): {e}")
+        return {"success": False, "error": f"Fallo en Nodo Central: {str(e)}"}
+
+    # Configuración de los nodos regionales
+    nodos = {
+        'la_paz': {'conectar': conectar_lp, 'db_type': 'postgresql'},
+        'santa_cruz': {'conectar': conectar_scz, 'db_type': 'sqlserver'}
+    }
+
+    al_menos_uno_sincronizado = False
+
+    for nombre_nodo, config in nodos.items():
+        try:
+            logger.info(f"🔄 Intentando conectar con el catálogo de: {nombre_nodo}...")
+            conn_reg = config['conectar']()
+            cur_reg = conn_reg.cursor()
+            
+            # Nota: En SQL Server es buena práctica poner la tabla en mayúsculas si corresponde
+            tabla_regional = "estado" if config['db_type'] == 'postgresql' else "ESTADO"
+            
+            cur_reg.execute(f"SELECT id_estado, nombre FROM {tabla_regional}")
+            
+            estados_regionales = {
+                int(row[0]): {
+                    "id_estado": int(row[0]), 
+                    "nombre": str(row[1]).strip()
+                } for row in cur_reg.fetchall()
+            }
+
+            inserts, updates, deletes = 0, 0, 0
+
+            # --- FASE 1: Altas y Modificaciones de Nombres de Estados ---
+            for id_e, e_cen in estados_central.items():
+                if id_e not in estados_regionales:
+                    # El estado falta por completo en la región -> INSERT manual sin IDENTITY
+                    if config['db_type'] == 'postgresql':
+                        cur_reg.execute(f"INSERT INTO {tabla_regional} (id_estado, nombre) VALUES (%s, %s)", (id_e, e_cen['nombre']))
+                    else:
+                        cur_reg.execute(f"INSERT INTO {tabla_regional} (id_estado, nombre) VALUES (?, ?)", (id_e, e_cen['nombre']))
+                    inserts += 1
+                else:
+                    # El estado existe -> Validar si cambiaron el nombre del texto (Ej: de "En tránsito" a "En Ruta Local")
+                    e_reg = estados_regionales[id_e]
+                    if e_cen['nombre'] != e_reg['nombre']:
+                        if config['db_type'] == 'postgresql':
+                            cur_reg.execute(f"UPDATE {tabla_regional} SET nombre=%s WHERE id_estado=%s", (e_cen['nombre'], id_e))
+                        else:
+                            cur_reg.execute(f"UPDATE {tabla_regional} SET nombre=? WHERE id_estado=?", (e_cen['nombre'], id_e))
+                        updates += 1
+
+            # --- FASE 2: Purgado / Eliminaciones ---
+            for id_reg in estados_regionales.keys():
+                if id_reg not in estados_central:
+                    if config['db_type'] == 'postgresql':
+                        cur_reg.execute(f"DELETE FROM {tabla_regional} WHERE id_estado = %s", (id_reg,))
+                    else:
+                        cur_reg.execute(f"DELETE FROM {tabla_regional} WHERE id_estado = ?", (id_reg,))
+                    deletes += 1
+
+            conn_reg.commit()
+            cur_reg.close()
+            conn_reg.close()
+
+            reporte[nombre_nodo] = {
+                "estado": "ONLINE",
+                "inserciones": inserts,
+                "modificaciones": updates,
+                "eliminaciones": deletes
+            }
+            al_menos_uno_sincronizado = True
+            logger.info(f"✅ Nodo {nombre_nodo} catálogo de estados sincronizado correctamente.")
+
+        except Exception as error_nodo:
+            logger.warning(f"⚠️ El nodo {nombre_nodo} está OFFLINE. Saltando Estados... Detalle: {error_nodo}")
+            reporte[nombre_nodo] = {
+                "estado": "OFFLINE / INACCESIBLE",
+                "inserciones": 0,
+                "modificaciones": 0,
+                "eliminaciones": 0
+            }
+
+    return {
+        "success": al_menos_uno_sincronizado, 
+        "reporte": reporte,
+        "nota": "Reconciliación de catálogo completada parcialmente" if not all(n["estado"] == "ONLINE" for n in reporte.values()) else "Catálogos homologados en todo el clúster"
+    }
