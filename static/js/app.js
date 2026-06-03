@@ -3,9 +3,6 @@
   bindModals();
   showPanel('dashboard');
 });
-<<<<<<< Updated upstream
-const PANEL_IDS = ['dashboard', 'coordinator', 'lapaz', 'scz'];
-=======
 
 // ===================================
 // FUNCIONES DEL DASHBOARD
@@ -220,8 +217,6 @@ async function cargarPaqueteFinancieroSCZ() {
 // ===================================
 // FUNCIONES DE MODALES
 // ===================================
-
->>>>>>> Stashed changes
 const MODAL_PROFILES = {
   'new-query': {
     title: 'Simulación de consulta distribuida',

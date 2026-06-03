@@ -11,6 +11,11 @@ from flask import render_template
 # 1. Importamos el Blueprint que contiene todas las rutas y mocks del Coordinador
 from routes.coordinador import coordinador_bp
 
+# utilidades y conexiones
+from respuestas import respuesta_ok, respuesta_error
+from logs.logger import registrar_log as _registrar_log
+from conexiones import conectar_lp, conectar_scz, conectar_central
+
 app = Flask(__name__)
 
 # Configuración de una clave secreta necesaria para las sesiones simuladas de Flask
@@ -19,6 +24,42 @@ app.secret_key = 'clave_secreta_coordinador_aduanero'
 # 2. Registramos el Blueprint en la aplicación Flask
 # Al dejar url_prefix en '/', tomamos el control de la raíz visual del sistema
 app.register_blueprint(coordinador_bp, url_prefix='/')
+
+
+# Adaptador local para llamadas simples a logs.logger.registrar_log
+def registrar_log(mensaje: str):
+    try:
+        _registrar_log('COORDINADOR', mensaje)
+    except Exception:
+        # evitar romper endpoints por fallo de logging
+        pass
+
+
+def ejecutar_consulta(query: str):
+    """Ejecuta una consulta simple en el Nodo Central y devuelve lista de dicts."""
+    conn = None
+    try:
+        conn = conectar_central()
+        cur = conn.cursor()
+        cur.execute(query)
+        cols = [c[0] for c in cur.description] if cur.description else []
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            if cols:
+                result.append({cols[i]: r[i] for i in range(len(cols))})
+            else:
+                result.append(r)
+        cur.close()
+        conn.close()
+        return result
+    except Exception:
+        try:
+            if conn:
+                conn.close()
+        except Exception:
+            pass
+        raise
 
 # Tu ruta de inicio original ahora redirecciona internamente al index del coordinador dentro de su directorio
 @app.route('/')
@@ -124,9 +165,6 @@ def inicio_nodo_regional(ciudad):
         
     return render_template('nodo_regional/index.html', nodo=config_nodo)
 
-<<<<<<< Updated upstream
-# -----------------------------------
-=======
 # ===================================
 # ENDPOINT DE ALMACENES REGIONALES (SQL REAL)
 # ===================================
@@ -413,9 +451,6 @@ def get_movimientos_globales():
     query = "SELECT id_movimiento, id_paquete, id_almacen, fecha_movimiento FROM MOVIMIENTO_GLOBAL;"
     data = ejecutar_consulta(query)
     return jsonify({"success": True, "data": data})
-
-
->>>>>>> Stashed changes
 
 if __name__ == '__main__':
     app.run(
