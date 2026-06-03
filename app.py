@@ -3,12 +3,12 @@ from flask_cors import CORS
 from consultas import obtener_trazabilidad
 from sincronizacion import sincronizar_clientes_master
 from actualizaciones import actualizar_estado
-from monitor import obtener_estado_nodos, obtener_metricas_nodo
-from metricas import obtener_metricas
+from monitor import obtener_estado_nodos
+from metricas import obtener_metricas, obtener_metricas_nodo
 from dashboard import construir_dashboard
 from validaciones import validar_codigo
 from paquetes import obtener_todos_paquetes, obtener_paquetes_por_nodo, crear_paquete, obtener_tabla_paquete, obtener_tabla_movimiento, obtener_tabla_paquete_financiero, buscar_paquete, obtener_paquetes_coordinador_central, obtener_historial_movimientos_paquete
-from paquetes import obtener_paquetes_por_tipo_nodo
+from paquetes import obtener_paquetes_por_tipo_nodo, actualizar_estado_distribuido
 from clientes import obtener_clientes_global, registrar_cliente_nodo  # <-- Asegúrate de tener o mapear esta función
 from movimientos import registrar_movimiento, obtener_movimientos_paquete, obtener_todos_movimientos, actualizar_estado_movimiento, obtener_historial_completo, obtener_movimientos_tabla_global
 from catalogo import obtener_fragmentos
@@ -16,6 +16,7 @@ from respuestas import respuesta_ok, respuesta_error
 from logs.logger import registrar_log
 from conexiones import conectar_lp, conectar_scz, conectar_central
 from clientes import obtener_clientes_local_lp, obtener_clientes_local_scz, obtener_clientes_local_central
+import logging
 
 def respuesta_ok(data): return {"success": True, "data": data}
 def respuesta_error(msg): return {"success": False, "error": msg}
@@ -26,6 +27,8 @@ def registrar_log(msg): print(f"[LOG SYSTEM]: {msg}")
 from routes.coordinador import coordinador_bp
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("Servidor_Coordinador")
 CORS(app)
 
 # Configuración de una clave secreta necesaria para las sesiones simuladas de Flask
@@ -55,6 +58,29 @@ def api_dashboard():
     except Exception as e:
         registrar_log(f"Error en dashboard: {e}")
         return jsonify(respuesta_error(str(e))), 500
+
+@app.route('/api/dashboard/metricas', methods=['GET'])
+def api_dashboard_metricas():
+    # Captura el parámetro de la URL, por defecto va a 'la_paz'
+    nodo_solicitado = request.args.get('nodo', 'la_paz')
+    
+    # Normaliza guiones medios a guiones bajos para que coincida con el diccionario de mapeo
+    nodo_solicitado = nodo_solicitado.replace('-', '_')
+    
+    try:
+        # Ejecución analítica directa hacia el clúster
+        resultado_analitica = obtener_metricas_nodo(nodo_solicitado)
+        
+        if not resultado_analitica or not resultado_analitica.get("success", False):
+            # Si el diccionario interno reporta éxito falso, maneja el error correspondiente
+            error_msg = resultado_analitica.get("error", "Error desconocido en el fragmento regional.")
+            return jsonify({"success": False, "error": error_msg}), 400
+            
+        return jsonify(resultado_analitica)
+        
+    except Exception as e:
+        logger.error(f"🚨 Error crítico en el ruteador de la API: {str(e)}")
+        return jsonify({"success": False, "error": "Fallo interno en el servidor de coordinación."}), 500
 
 
 @app.route('/api/metricas')
@@ -191,6 +217,25 @@ def api_buscar_paquete(codigo):
     except Exception as e:
         return jsonify(respuesta_error(f"Fallo crítico en el motor de búsqueda federada: {str(e)}")), 500
 
+@app.route('/api/paquete/actualizar-estado', methods=['PUT'])
+def api_actualizar_estado_paquete():
+    data = request.json or {}
+    codigo = data.get('codigo')
+    nuevo_estado = data.get('estado')
+    nodo = data.get('nodo')
+
+    if not codigo or not nuevo_estado or not nodo:
+        return jsonify({"success": False, "error": "Faltan parámetros obligatorios (codigo, estado, nodo)."}), 400
+
+    try:
+        # Invocamos la lógica distribuida para actualizar el estado en los nodos que correspondan
+        exito = actualizar_estado_distribuido(codigo, nuevo_estado, nodo)
+        if exito:
+            return jsonify({"success": True, "mensaje": "Estado sincronizado en el clúster."}), 200
+        return jsonify({"success": False, "error": "No se pudo actualizar el estado en los fragmentos definidos."}), 500
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Error en transacción de rampa: {str(e)}"}), 500
+
 
 @app.route('/api/tabla/paquete/<nodo>')
 def api_tabla_paquete(nodo):
@@ -247,72 +292,41 @@ def api_paquetes_por_tipo(nodo):
 def api_crear_paquete():
     data = request.json or {}
     
-    # 1. Parámetros Base e Identificadores Relacionales
     codigo = data.get('codigo')
-    destino = data.get('id_ruta')       # ID numérico real (1 o 2) de la ruta
+    destino = data.get('id_ruta')       
     prioridad = data.get('prioridad')
-    nodo = data.get('nodo')             # Nodo de origen ('lp' o 'scz')
-    remitente = data.get('remitente')   # El UUID del cliente seleccionado
+    nodo = data.get('nodo')             
+    remitente = data.get('remitente')   
+    destinatario = data.get('destinatario') # Captura del destinatario mapeada desde JS
     descripcion = data.get('descripcion', '').strip()
 
-    # 2. Parámetros Métricos de Carga
-    peso = data.get('peso')
-    volumen = data.get('volumen')
-    
-    # 3. Parámetros Financieros / Aduaneros
-    valor_declarado = data.get('valor_declarado')
-    seguro = data.get('seguro')
-    costo_envio = data.get('costo')     # Mapeado desde 'costo' en tu payload de JS
-
-    # 4. Conversión y Sanitización de Tipos (Evita restricciones de nulos en los motores)
     try:
-        peso_conv = float(peso) if peso is not None else 1.0
-        volumen_conv = float(volumen) if volumen is not None else 1.0
-        valor_conv = float(valor_declarado) if valor_declarado is not None else 0.0
-        seguro_conv = float(seguro) if seguro is not None else 0.0
-        costo_conv = float(costo_envio) if costo_envio is not None else 0.0
+        peso_conv = float(data.get('peso', 1.0))
+        volumen_conv = float(data.get('volumen', 1.0))
+        valor_conv = float(data.get('valor_declarado', 0.0))
+        seguro_conv = float(data.get('seguro', 0.0))
+        costo_conv = float(data.get('costo', 0.0))
     except (ValueError, TypeError) as err:
-        return jsonify({
-            "success": False, 
-            "error": f"Error de casteo en campos numéricos (Métricas/Finanzas): {str(err)}"
-        }), 400
+        return jsonify({"success": False, "error": f"Error de casteo numérico: {str(err)}"}), 400
 
-    # 5. Invocación Protegida al Motor Distribuido
     try:
-        # Se envía la firma extendida mapeando los datos sanitizados
+        # Firma extendida con remitente y destinatario separados hacia las funciones de base de datos
         exito = crear_paquete(
-            codigo=codigo,
-            destino=destino,
-            prioridad=prioridad,
-            nodo=nodo,
-            remitente=remitente,
-            descripcion=descripcion,
-            peso=peso_conv,
-            volumen=volumen_conv,
-            valor_declarado=valor_conv,
-            seguro=seguro_conv,
-            costo_envio=costo_conv
+            codigo=codigo, destino=destino, prioridad=prioridad, nodo=nodo,
+            remitente=remitente, destinatario=destinatario, descripcion=descripcion,
+            peso=peso_conv, volumen=volumen_conv, valor_declarado=valor_conv,
+            seguro=seguro_conv, costo_envio=costo_conv
         )
         
         if exito:
             return jsonify({
                 "success": True, 
-                "data": {"mensaje": "Paquete registrado exitosamente en el clúster (Operativo/Financiero)"}
+                "data": {"mensaje": "Paquete registrado de forma síncrona en fragmentos operativos y financieros."}
             }), 200
-        else:
-            # En caso de que pase los bloques try pero devuelva False de forma inesperada
-            return jsonify({
-                "success": False, 
-                "error": "El motor distribuido no pudo confirmar el registro en todos los fragmentos."
-            }), 500
+        return jsonify({"success": False, "error": "El motor distribuido rechazó la transacción."}), 500
 
     except Exception as error_motor:
-        # CAPTURA CRÍTICA: Captura fallas de red, tablas inexistentes o llaves foráneas rotas
-        # y devuelve el string exacto que arrojó el driver (psycopg2 o pyodbc)
-        return jsonify({
-            "success": False, 
-            "error": f"Error real del motor de base de datos: {str(error_motor)}"
-        }), 500
+        return jsonify({"success": False, "error": f"Falla de consistencia en el clúster: {str(error_motor)}"}), 500
 
 
 # ===================================

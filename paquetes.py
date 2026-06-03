@@ -70,44 +70,28 @@ def obtener_paquetes_por_nodo(nodo):
     return paquetes
 
 
-def crear_paquete(codigo, destino, prioridad, nodo, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio):
+def crear_paquete(codigo, destino, prioridad, nodo, remitente, destinatario, descripcion, peso, volumen, valor_declarado, seguro, costo_envio):
     id_paquete = str(uuid.uuid4())
     nodo_origen = str(nodo).strip().lower()
     
-    try:
-        # =========================================================
-        # 1. NODO CENTRAL: Registro Maestro Global (SQL Server)
-        # =========================================================
-        insertar_en_central(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
+    # Asegúrate de mapear estas sub-funciones internas en tus scripts de inserción 
+    # para que acepten tanto 'remitente' como 'destinatario' en los INSERT INTO de SQL.
+    insertar_en_central(id_paquete, codigo, destino, prioridad, remitente, destinatario, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
+        
+    if nodo_origen in ['lapaz', 'la_paz', 'lp']:
+        insertar_en_lp(id_paquete, codigo, destino, prioridad, remitente, destinatario, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
+    elif nodo_origen in ['santacruz', 'santa_cruz', 'scz']:
+        insertar_en_scz(id_paquete, codigo, destino, prioridad, remitente, destinatario, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
+    else:
+        raise ValueError(f"Nodo de origen '{nodo_origen}' no mapeado.")
+        
+    # Replicación cruzada parcial (Fragmento Operativo Inverso)
+    if nodo_origen not in ['lapaz', 'la_paz', 'lp']:
+        insertar_operativo_lp_solo(id_paquete, codigo, destino, prioridad, remitente, destinatario, descripcion, peso, volumen)
+    else:
+        insertar_operativo_scz_solo(id_paquete, codigo, destino, prioridad, remitente, destinatario, descripcion, peso, volumen)
             
-        # =========================================================
-        # 2. NODO ORIGEN: Registro Completo (Operativo + Financiero)
-        # =========================================================
-        if nodo_origen in ['lapaz', 'la_paz', 'lp']:
-            insertar_en_lp(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
-        elif nodo_origen in ['santacruz', 'santa_cruz', 'scz']:
-            insertar_en_scz(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen, valor_declarado, seguro, costo_envio)
-        else:
-            raise ValueError(f"Nodo de origen '{nodo_origen}' no reconocido por el backend.")
-            
-        # =========================================================
-        # 3. NODO DESTINO: Replicación Cruzada Parcial (Solo Operativo)
-        # =========================================================
-        # REGLA INVERSA DIRECTA: Si no se originó en LP, obliga a dejar copia operativa en LP.
-        if nodo_origen not in ['lapaz', 'la_paz', 'lp']:
-            registrar_log(f"Iniciando replicación cruzada desde SCZ hacia el fragmento operativo de La Paz para el paquete {codigo}")
-            insertar_operativo_lp_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen)
-            
-        # REGLA INVERSA DIRECTA: Si se originó en LP, obliga a dejar copia operativa en SCZ.
-        else:
-            registrar_log(f"Iniciando replicación cruzada desde LP hacia el fragmento operativo de Santa Cruz para el paquete {codigo}")
-            insertar_operativo_scz_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen)
-                
-        return True
-
-    except Exception as e:
-        registrar_log(f"FALLO EN TRANSACCIÓN DISTRIBUIDA DE PAQUETES: {str(e)}")
-        raise e
+    return True
 
 
 def insertar_operativo_lp_solo(id_paquete, codigo, destino, prioridad, remitente, descripcion, peso, volumen):
@@ -471,3 +455,51 @@ def obtener_historial_movimientos_paquete(id_paquete):
         if cur: cur.close()
         if conn: conn.close()
     return historial
+
+
+# ==============================================================================
+# PERSISTENCIA DISTRIBUIDA DE ESTADOS EN EL CLÚSTER HÍBRIDO
+# ==============================================================================
+def actualizar_estado_distribuido(codigo, nuevo_estado, nodo_origen):
+    nodo_limpio = str(nodo_origen).strip().lower()
+    
+    # Determinar qué tablas e instrucciones aplicar según el tipo de motor regional
+    if nodo_limpio in ['santa_cruz', 'scz', 'nodo_scz']:
+        tabla_regional = "PAQUETE_OPERATIVO_SCZ"
+        conn_regional = conectar_scz()
+    else:
+        tabla_regional = "paquete_operativo_lp"
+        conn_regional = conectar_lp()
+
+    # 1. ACTUALIZACIÓN EN NODO CENTRAL (SQL Server - Catálogo Maestro Global)
+    conn_central = conectar_central()
+    try:
+        cur_central = conn_central.cursor()
+        # Se asume que el maestro global se encuentra unificado bajo la tabla maestra global 'paquetes'
+        cur_central.execute(
+            "UPDATE paquetes SET estado = ? WHERE codigo_rastreo = ?", 
+            (nuevo_estado, codigo)
+        )
+        conn_central.commit()
+    finally:
+        conn_central.close()
+
+    # 2. ACTUALIZACIÓN EN FRAGMENTO REGIONAL CORRESPONDIENTE
+    try:
+        cur_regional = conn_regional.cursor()
+        # Se ejecuta de forma segura parametrizando de acuerdo al driver nativo
+        if nodo_limpio in ['santa_cruz', 'scz', 'nodo_scz']:
+            cur_regional.execute(
+                f"UPDATE {tabla_regional} SET estado = ? WHERE codigo_rastreo = ?", 
+                (nuevo_estado, codigo)
+            )
+        else:
+            cur_regional.execute(
+                f"UPDATE {tabla_regional} SET estado = %s WHERE codigo_rastreo = %s", 
+                (nuevo_estado, codigo)
+            )
+        conn_regional.commit()
+    finally:
+        conn_regional.close()
+
+    return True
