@@ -5,7 +5,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", function() {
-    inicializarDashboardOperativo();
+    cargarDashboardOperativo();
 });
 
 async function inicializarDashboardOperativo() {
