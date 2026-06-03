@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 from consultas import obtener_trazabilidad
-from sincronizacion import obtener_pendientes, guardar_operacion
+from sincronizacion import sincronizar_clientes_master
 from actualizaciones import actualizar_estado
 from monitor import obtener_estado_nodos, obtener_metricas_nodo
 from metricas import obtener_metricas
@@ -156,6 +156,18 @@ def api_listar_clientes():
             "success": False, 
             "error": f"Error al consultar la infraestructura distribuida en el nodo '{nodo}': {str(e)}"
         }), 500
+
+
+@app.route('/api/clientes/sincronizar', methods=['POST'])
+def api_sincronizar_clientes():
+    # Llamada directa al script especializado
+    resultado = sincronizar_clientes_master()
+    
+    if resultado.get("success"):
+        return jsonify(resultado), 200
+    else:
+        return jsonify(resultado), 500
+
 
 
 @app.route('/api/paquete/buscar/<codigo>', methods=['GET'])
@@ -430,19 +442,19 @@ def trazabilidad(codigo):
     return jsonify(resultado)
 
 
-@app.route('/api/pendientes')
-def api_pendientes():
-    """Obtiene operaciones pendientes"""
-    try:
-        pendientes = obtener_pendientes()
-        return jsonify(respuesta_ok(pendientes))
-    except Exception as e:
-        return jsonify(respuesta_error(str(e))), 500
+# @app.route('/api/pendientes')
+# def api_pendientes():
+#     """Obtiene operaciones pendientes"""
+#     try:
+#         pendientes = obtener_pendientes()
+#         return jsonify(respuesta_ok(pendientes))
+#     except Exception as e:
+#         return jsonify(respuesta_error(str(e))), 500
 
 
-@app.route('/pendientes')
-def pendientes():
-    return jsonify(obtener_pendientes())
+# @app.route('/pendientes')
+# def pendientes():
+#     return jsonify(obtener_pendientes())
 
 
 @app.route('/api/actualizar_estado', methods=['PUT'])

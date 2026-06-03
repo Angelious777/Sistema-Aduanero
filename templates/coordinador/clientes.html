@@ -3,6 +3,16 @@
         <strong>Consolidación de Clientes Aduaneros.</strong> Muestra la unificación analítica de los esquemas <code>CLIENTE_PUBLICO</code> y <code>CLIENTE_PRIVADO</code>. El motor del coordinador central asocia de forma automática las llaves de identidad corporativa.
     </div>
 
+    <div class="sincronizacion-contenedor" style="background: #f8fafc; border: 1px solid var(--borde); padding: 16px; border-radius: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+        <div>
+            <h4 style="margin: 0; color: #1e293b; font-size: 15px; display: flex; align-items: center; gap: 8px;">🔄 Reconciliación de Datos Distribuidos</h4>
+            <p style="margin: 4px 0 0 0; color: #64748b; font-size: 12px;">Fuerza la paridad total de los fragmentos regionales (La Paz y Santa Cruz) tomando este Nodo Coordinador como la única fuente de la verdad.</p>
+        </div>
+        <button id="btn-sincronizar-master" class="btn-primario" style="background: #0ea5e9; border: none; padding: 10px 20px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap;" onclick="ejecutarSincronizacionCascada()">
+            ⚡ Sincronizar Datos Regionales
+        </button>
+    </div>
+
     <div class="busqueda-contenedor">
         <div style="display: flex; gap: 16px;">
             <input type="text" id="clt-buscar-nombre" placeholder="Buscar por nombres o apellidos del cliente..." style="flex: 2; padding: 12px; border: 1px solid var(--borde); border-radius: 8px;">

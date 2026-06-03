@@ -19,11 +19,11 @@ try:
     # ==================================
     # EJEMPLO 1: CONSULTA SIMPLE
     # ==================================
-    cur.execute("SELECT * FROM cola_pendientes;")
+    cur.execute("SELECT * FROM cliente_publico;")
 
     filas = cur.fetchall()
 
-    print("\nCOLA DE PENDIENTES:\n")
+    print("\nCLIENTES GLOBAL:\n")
 
     for fila in filas:
         print(fila)

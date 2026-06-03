@@ -1,4 +1,3 @@
-from sincronizacion import cantidad_pendientes
 from conexiones import conectar_central, conectar_lp, conectar_scz
 
 # -----------------------------------
@@ -9,7 +8,7 @@ def obtener_metricas():
     """Obtiene métricas del sistema distribuido"""
     try:
         metricas = {
-            "pendientes": cantidad_pendientes(),
+            "pendientes": 0,  # cantidad_pendientes()
             "nodos_activos": 0,
             "fragmentos": 0,
             "motor_lp": "PostgreSQL",
@@ -56,7 +55,7 @@ def obtener_metricas():
     except Exception as e:
         print("Error obteniendo métricas:", e)
         return {
-            "pendientes": cantidad_pendientes(),
+            "pendientes": 0,  # cantidad_pendientes()
             "nodos_activos": 0,
             "fragmentos": 4,
             "motor_lp": "PostgreSQL",

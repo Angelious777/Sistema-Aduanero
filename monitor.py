@@ -1,6 +1,5 @@
 from tolerancia import NODOS_ACTIVOS
 from conexiones import conectar_central, conectar_lp, conectar_scz
-from sincronizacion import cantidad_pendientes
 
 # -----------------------------------
 # VER ESTADO DE NODOS
@@ -58,7 +57,7 @@ def obtener_metricas_nodo(nodo):
                 'motor': 'PostgreSQL',
                 'paquetes': total_paquetes,
                 'movimientos': total_movimientos,
-                'pendientes': cantidad_pendientes()
+                'pendientes': 0  # cantidad_pendientes()
             }
         
         elif nodo == 'Santa Cruz':
@@ -79,7 +78,7 @@ def obtener_metricas_nodo(nodo):
                 'motor': 'SQL Server',
                 'paquetes': total_paquetes,
                 'movimientos': total_movimientos,
-                'pendientes': cantidad_pendientes()
+                'pendientes': 0  # cantidad_pendientes()
             }
     except Exception as e:
         print(f"Error obteniendo métricas de {nodo}:", e)

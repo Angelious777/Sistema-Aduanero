@@ -1,7 +1,6 @@
 from metricas import obtener_metricas, obtener_transacciones_distribuidas
 from monitor import obtener_estado_nodos, obtener_metricas_nodo
 from conexiones import conectar_central, conectar_lp, conectar_scz
-from sincronizacion import cantidad_pendientes
 
 # -----------------------------------
 # CONSTRUIR DASHBOARD
@@ -14,7 +13,7 @@ def construir_dashboard():
         estado_nodos = obtener_estado_nodos()
         
         # Obtener datos de sincronización
-        pendientes = cantidad_pendientes()
+        pendientes = 0  # cantidad_pendientes()
         
         # Obtener actividad reciente
         actividad_reciente = obtener_actividad_reciente()

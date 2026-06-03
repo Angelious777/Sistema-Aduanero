@@ -1,89 +1,232 @@
+/**
+ * clientes.js - Controlador Transaccional para Inserciones Distribuidas
+ */
+
+window.CLIENTES_GLOBAL = [];
+
 document.addEventListener("DOMContentLoaded", function() {
     listarClientesReplicados();
-    document.getElementById("clt-buscar-nombre").addEventListener("input", listarClientesReplicados);
-    document.getElementById("clt-buscar-doc").addEventListener("input", listarClientesReplicados);
-    document.getElementById("clt-buscar-tel").addEventListener("input", listarClientesReplicados);
+    
+    // Filtros dinámicos reactivos mapeados al JSON real
+    document.getElementById("clt-buscar-nombre")?.addEventListener("input", renderizarClientesReplicados);
+    document.getElementById("clt-buscar-tel")?.addEventListener("input", renderizarClientesReplicados);
 });
 
-function listarClientesReplicados() {
+// =========================================================
+// GESTIÓN DE MODALES (CONMUTACIÓN INMEDIATA)
+// =========================================================
+
+function abrirModalRegistroCliente() {
+    const modal = document.getElementById("modal-registro-cliente");
+    if (modal) {
+        modal.classList.add("modal-active");
+    }
+}
+
+function cerrarModalRegistroCliente() {
+    const modal = document.getElementById("modal-registro-cliente");
+    if (modal) {
+        modal.classList.remove("modal-active");
+    }
+}
+
+function cerrarModalVerCliente() {
+    const modal = document.getElementById("modal-ver-cliente");
+    if (modal) {
+        modal.classList.remove("modal-active");
+    }
+}
+
+// =========================================================
+// API QUERY & RENDERIZADO REPLICADO LOCAL
+// =========================================================
+
+async function listarClientesReplicados() {
+    const tbody = document.getElementById("tabla-clientes-replicados-body");
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">🔄 Cargando datos del nodo local...</td></tr>`;
+
+    const path = window.location.pathname.toLowerCase().replace(/-/g, "_");
+    let nodoActual = "global"; 
+
+    if (path.includes("la_paz") || path.includes("lp")) {
+        nodoActual = "nodo_lp";
+    } else if (path.includes("santa_cruz") || path.includes("scz")) {
+        nodoActual = "nodo_scz";
+    }
+
+    try {
+        // Consulta directa al puerto del coordinador
+        const response = await fetch(`/api/clientes?nodo=${nodoActual}`);
+        const resultado = await response.json();
+        
+        if (resultado.success) {
+            window.CLIENTES_GLOBAL = resultado.data || [];
+            renderizarClientesReplicados();
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger); text-align:center;">❌ Error: ${resultado.error}</td></tr>`;
+        }
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger); text-align:center;">❌ Desconectado de la red distribuida local</td></tr>`;
+    }
+}
+
+function renderizarClientesReplicados() {
     const tbody = document.getElementById("tabla-clientes-replicados-body");
     if (!tbody) return;
 
-    const fNombre = document.getElementById("clt-buscar-nombre").value.toLowerCase();
-    const fDoc = document.getElementById("clt-buscar-doc").value.toLowerCase();
-    const fTel = document.getElementById("clt-buscar-tel").value.toLowerCase();
+    const fNombre = document.getElementById("clt-buscar-nombre")?.value.trim().toLowerCase() || "";
+    const fTel = document.getElementById("clt-buscar-tel")?.value.trim().toLowerCase() || "";
 
     tbody.innerHTML = "";
-    let filtrados = window.DB_NODO_LOCAL.clientes_publicos;
+    let filtrados = window.CLIENTES_GLOBAL || [];
 
-    if (fNombre) filtrados = filtrados.filter(c => c.nombre.toLowerCase().includes(fNombre));
-    if (fDoc) filtrados = filtrados.filter(c => c.documento.toLowerCase().includes(fDoc));
-    if (fTel) filtrados = filtrados.filter(c => c.telefono.toLowerCase().includes(fTel));
+    // Filtros utilizando las llaves exactas de tu JSON ("nombre", "telefono")
+    if (fNombre) filtrados = filtrados.filter(c => c.nombre && c.nombre.toLowerCase().includes(fNombre));
+    if (fTel) filtrados = filtrados.filter(c => c.telefono && c.telefono.toLowerCase().includes(fTel));
 
-    filtrados.forEach(c => {
+    if (filtrados.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No hay registros locales en este fragmento.</td></tr>`;
+        return;
+    }
+
+    filtrados.forEach((c, idx) => {
         const fila = document.createElement("tr");
         fila.innerHTML = `
-            <td><code>CLT-${c.id}</code></td>
+            <td><code>${idx + 1}</code></td>
             <td><strong>${c.nombre}</strong></td>
-            <td>${c.documento}</td>
-            <td>${c.telefono}</td>
-            <td>${c.correo}</td>
-            <td style="text-align:center;">
-                <button class="btn-secundario" style="padding:4px 10px; font-size:0.78rem;" onclick="verClientePublico(${c.id})">Ver</button>
+            <td><span style="background:#f1f5f9; padding:4px 8px; border-radius:4px; font-family:monospace;">${c.telefono || '—'}</span></td>
+            <td><small style="color:#64748b;">${c.registro || 'Automático'}</small></td>
+            <td style="text-align: center;">
+                <button class="btn-secundario btn-ver-ficha" style="padding: 4px 10px; font-size: 11px; cursor:pointer;">Ver Ficha</button>
             </td>
         `;
+        
+        // Listener seguro que inyecta el objeto mapeado de la fila
+        fila.querySelector(".btn-ver-ficha").addEventListener("click", () => verFichaCliente(c));
         tbody.appendChild(fila);
     });
 }
 
-function abrirModalRegistroCliente() {
-    document.getElementById("form-registro-cliente").reset();
-    document.getElementById("modal-registro-cliente").classList.add("modal-active");
-}
-function cerrarModalRegistroCliente() { document.getElementById("modal-registro-cliente").classList.remove("modal-active"); }
+// =========================================================
+// VISUALIZACIÓN DINÁMICA DE LA FICHA (CON PARSEO DE DATOS)
+// =========================================================
 
-function verClientePublico(id) {
-    const clt = window.DB_NODO_LOCAL.clientes_publicos.find(c => c.id === id);
-    if(!clt) return;
-    const box = document.getElementById("modal-ver-cliente-content");
-    box.innerHTML = `
-        <p><strong>Identificador:</strong> CLT-${clt.id}</p>
-        <p><strong>Razón Social:</strong> ${clt.nombre}</p>
-        <p><strong>Documentación:</strong> ${clt.documento}</p>
-        <p><strong>Teléfono Fijo/Cel:</strong> ${clt.telefono}</p>
-        <p><strong>E-mail Central:</strong> ${clt.correo}</p>
-    `;
-    document.getElementById("modal-ver-cliente").classList.add("modal-active");
-}
-function cerrarModalVerCliente() { document.getElementById("modal-ver-cliente").classList.remove("modal-active"); }
-
-function despacharRegistroClienteCoordinador() {
-    const nom = document.getElementById("reg-clt-nombre").value.trim();
-    const doc = document.getElementById("reg-clt-doc").value.trim();
-    const tel = document.getElementById("reg-clt-tel").value.trim();
-    const mail = document.getElementById("reg-clt-correo").value.trim();
+function verFichaCliente(cliente) {
+    const modal = document.getElementById("modal-ver-cliente");
+    const contenedor = document.getElementById("modal-ver-cliente-content");
     
-    // Atributos privados
-    const dir = document.getElementById("reg-clt-direccion").value.trim();
-    const nit = document.getElementById("reg-clt-nit").value.trim();
-
-    if(!nom || !doc || !tel || !mail || !dir || !nit) {
-        alert("Atención: Complete los campos requeridos de ambas secciones.");
+    if (!modal || !contenedor) {
+        console.error("❌ Elementos del modal no encontrados en el DOM.");
         return;
     }
 
-    const nId = 100 + window.DB_NODO_LOCAL.clientes_publicos.length + 1;
-    
-    // Simula POST /api/registrar-cliente
-    console.log("POST /api/registrar-cliente hacia el Nodo Coordinador exitoso.");
+    let bloquePrivadoHTML = "";
 
-    window.DB_NODO_LOCAL.clientes_publicos.push({ id: nId, nombre: nom, documento: doc, telefono: tel, correo: mail });
-    
-    alert(`[API TRANSACTION SUCCESS]\nPetición POST enviada al Coordinador.\n\n` +
-          `• INSERT INTO CLIENTE_PUBLICO -> Exitoso\n• INSERT INTO CLIENTE_PRIVADO -> Guardado Cifrado\n\n` +
-          `La réplica total fue esparcida de vuelta a los nodos regionales.`);
-          
-    cerrarModalRegistroCliente();
-    listarClientesReplicados();
-    if(typeof inicializarDashboardLocal === "function") inicializarDashboardLocal();
+    // Si viene enmascarado por la autonomía regional de seguridad vertical
+    if (cliente.documento === "Consulte a Central" || cliente.correo === "Consulte a Central") {
+        bloquePrivadoHTML = `
+            <div style="background: #fdf2f2; border: 1px solid #fca5a5; padding: 12px; border-radius: 8px; margin-top: 12px; color: #991b1b; font-size: 13px; line-height: 1.5;">
+                🔒 <strong>Datos Privados Resguardados:</strong> Los campos Documento, Correo y Dirección pertenecen al fragmento de seguridad vertical regional y solo pueden auditarse con privilegios desde el Nodo Central.
+            </div>
+        `;
+    } else {
+        // Estructura limpia para datos abiertos unificados desde el Nodo Central Master
+        bloquePrivadoHTML = `
+            <div style="margin-top: 14px; border-top: 1px dashed #e2e8f0; padding-top: 14px;">
+                <p style="margin: 8px 0; color: #475569;"><strong>🪪 Documento Identidad:</strong><br>
+                    <code style="background: #e0e7ff; color: #3730a3; padding: 3px 8px; border-radius: 4px; font-family: monospace; font-size: 13px; display: inline-block; margin-top: 4px;">${cliente.documento || 'S/D'}</code>
+                </p>
+                <p style="margin: 12px 0; color: #475569;"><strong>✉️ Correo Electrónico:</strong><br>
+                    <span style="color:#0f172a; font-size: 14px;">${cliente.correo || '—'}</span>
+                </p>
+                <p style="margin: 12px 0; color: #475569;"><strong>🏠 Dirección Fiscal:</strong><br>
+                    <span style="color:#0f172a; font-size: 14px;">${cliente.direccion || '—'}</span>
+                </p>
+            </div>
+        `;
+    }
+
+    // Volcado de datos generales en el contenedor
+    contenedor.innerHTML = `
+        <div style="font-family: system-ui, sans-serif; font-size: 14px; color: #1e293b;">
+            <p style="margin: 8px 0; color: #475569;"><strong>📍 Cliente / Razón Social:</strong><br>
+                <span style="color:#0f172a; font-weight:600; font-size: 16px;">${cliente.nombre}</span>
+            </p>
+            <p style="margin: 12px 0; color: #475569;"><strong>📞 Teléfono de Contacto:</strong><br>
+                <span style="color:#0f172a; font-size: 14px; font-family: monospace;">${cliente.telefono || '—'}</span>
+            </p>
+            <p style="margin: 12px 0; color: #475569;"><strong>📅 Registro de Auditoría (ID):</strong><br>
+                <small style="color:#64748b; display:block;">Fecha Alta: ${cliente.registro || 'Automático'}</small>
+                <small style="color:#94a3b8; font-family: monospace; font-size: 11px; display:block; margin-top: 2px;">UUID: ${cliente.id || '—'}</small>
+            </p>
+            ${bloquePrivadoHTML}
+        </div>
+    `;
+
+    // CAMBIO CRUCIAL: Añade la clase operativa. 
+    // Recuerda que en tu CSS debes tener: .modal-overlay.modal-active { display: flex !important; opacity: 1 !important; }
+    modal.classList.add("modal-active");
+}
+
+
+// ==============================================================================
+// AGREGADO: MOTOR DE RECONCILIACIÓN DISTRIBUIDA EN SEGUNDO PLANO
+// ==============================================================================
+
+async function ejecutarSincronizacionCascada() {
+    const btn = document.getElementById("btn-sincronizar-master");
+    if (!btn) return;
+
+    // Bloquear interacción de la UI durante el intercambio transaccional de sockets/datos
+    btn.disabled = true;
+    btn.style.opacity = "0.6";
+    btn.style.cursor = "not-allowed";
+    btn.innerText = "⏳ Reconciliando Red de Nodos...";
+
+    try {
+        // Petición POST hacia el módulo de sincronización estructurado en tu API de Python
+        const response = await fetch('/api/clientes/sincronizar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const resultado = await response.json();
+
+        if (response.ok && resultado.success) {
+            // Construcción dinámica del reporte de impacto regional
+            let mensajeExito = "✅ PROCESO DE SINCRONIZACIÓN FINALIZADO\n\n";
+            
+            for (const [nodo, metricas] of Object.entries(resultado.reporte)) {
+                mensajeExito += `📍 Fragmento: ${nodo.toUpperCase().replace('_', ' ')}\n`;
+                mensajeExito += `   • Estado Operativo: ${metricas.estado}\n`;
+                mensajeExito += `   • Clientes Nuevos Insertados: ${metricas.inserciones}\n`;
+                mensajeExito += `   • Datos Desactualizados Modificados: ${metricas.modificaciones}\n`;
+                mensajeExito += `   • Clientes Huérfanos Eliminados: ${metricas.eliminaciones}\n\n`;
+            }
+            
+            if (resultado.nota) {
+                mensajeExito += `⚠️ Nota del Servidor: ${resultado.nota}`;
+            }
+
+            alert(mensajeExito);
+            
+            // Refrescar el estado de la tabla principal en pantalla
+            await listarClientesReplicados();
+        } else {
+            // Manejo de errores controlados (Ej: Nodo Central Caído o fallas sintácticas)
+            alert(`❌ Error devuelto por el Motor de Sincronización:\n${resultado.error || 'Fallo desconocido'}`);
+        }
+    } catch (error) {
+        // Captura fallas severas de infraestructura o desconexión del servidor Flask
+        alert(`❌ Fallo crítico de comunicación con el segmento de red: ${error.message}`);
+    } finally {
+        // Restaurar las propiedades funcionales del botón interactivo
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.style.cursor = "pointer";
+        btn.innerText = "⚡ Sincronizar Datos Regionales";
+    }
 }
