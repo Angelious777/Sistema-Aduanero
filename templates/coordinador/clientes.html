@@ -8,9 +8,15 @@
             <h4 style="margin: 0; color: #1e293b; font-size: 15px; display: flex; align-items: center; gap: 8px;">🔄 Reconciliación de Datos Distribuidos</h4>
             <p style="margin: 4px 0 0 0; color: #64748b; font-size: 12px;">Fuerza la paridad total de los fragmentos regionales (La Paz y Santa Cruz) tomando este Nodo Coordinador como la única fuente de la verdad.</p>
         </div>
-        <button id="btn-sincronizar-master" class="btn-primario" style="background: #0ea5e9; border: none; padding: 10px 20px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap;" onclick="ejecutarSincronizacionCascada()">
-            ⚡ Sincronizar Datos Regionales
-        </button>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <button id="btn-actualizar-clientes" class="btn-secundario" style="background: #e2e8f0; border: none; padding: 10px 16px; border-radius: 8px; color: #475569; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;" onclick="forzarActualizacionClientes()">
+                🔄 Actualizar Lista
+            </button>
+            
+            <button id="btn-sincronizar-master" class="btn-primario" style="background: #0ea5e9; border: none; padding: 10px 20px; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; white-space: nowrap;" onclick="ejecutarSincronizacionCascada()">
+                ⚡ Sincronizar Datos Regionales
+            </button>
+        </div>
     </div>
 
     <div class="busqueda-contenedor">

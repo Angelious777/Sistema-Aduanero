@@ -150,6 +150,7 @@ function mostrarPaquetesFinancieros() {
 // =========================================================
 async function cargarComboboxModal() {
     try {
+        // 1. Carga de Clientes
         const resClientes = await fetch('/api/clientes').then(r => r.json());
         const selectRemitente = document.getElementById("reg-pkt-remitente");
         const selectDestinatario = document.getElementById("reg-pkt-destinatario");
@@ -168,17 +169,25 @@ async function cargarComboboxModal() {
             if (selectDestinatario) selectDestinatario.innerHTML = optionsDest;
         }
 
+        // 2. Carga Dinámica Real de las Rutas desde el Ecosistema
         const selectDestino = document.getElementById("reg-pkt-destino");
         if (selectDestino) {
-            let options = '<option value="">-- Seleccione Ruta de Tránsito Habilitada --</option>';
-            const tusRutasReales = [
-                { id: 1, descripcion: "Ruta 1: Almacén Central LP ➔ Almacén Central SCZ (Envío Terrestre)" },
-                { id: 2, descripcion: "Ruta 2: Almacén Central SCZ ➔ Almacén Central LP (Retorno Terrestre)" }
-            ];
-            tusRutasReales.forEach(ruta => {
-                options += `<option value="${ruta.id}">${ruta.descripcion}</option>`;
-            });
-            selectDestino.innerHTML = options;
+            selectDestino.innerHTML = '<option value="">⏳ Actualizando rutas del motor...</option>';
+            
+            // Consumimos el endpoint real de rutas globales que corregimos en el paso anterior
+            const resRutas = await fetch('/api/ruta/listar').then(r => r.json());
+            
+            if (resRutas.success && resRutas.data) {
+                let options = '<option value="">-- Seleccione Ruta de Tránsito Habilitada --</option>';
+                
+                resRutas.data.forEach(ruta => {
+                    options += `<option value="${ruta.id_ruta}">Ruta ${ruta.id_ruta}: ${ruta.descripcion || 'Sin descripción'}</option>`;
+                });
+                
+                selectDestino.innerHTML = options;
+            } else {
+                selectDestino.innerHTML = '<option value="">❌ Error al mapear rutas del clúster</option>';
+            }
         }
     } catch (err) {
         console.error("❌ Error inyectando llaves foráneas reales a la interfaz:", err);

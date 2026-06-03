@@ -39,67 +39,100 @@ def obtener_clientes_global():
 
 
 def registrar_cliente_nodo(nit_ci, nombre, apellido_paterno, apellido_materno, telefono, direccion, email, nodo_destino):
-    id_cliente_global = str(uuid.uuid4())
+    """
+    Efectúa una inserción distribuida coordinada global.
+    Maneja marcadores híbridos: %s para PostgreSQL (La Paz) y ? para SQL Server (Santa Cruz y Central).
+    """
+    # 1. Generar la llave primaria unificada (UUID)
+    id_cliente_nuevo = str(uuid.uuid4())
     fecha_actual = datetime.now()
 
-    conn_lp, cur_lp = None, None
-    conn_scz, cur_scz = None, None
-    conn_central, cur_central = None, None
+    conn_central = None
+    conn_lp = None
+    conn_scz = None
 
     try:
-        # 1. INSERCION EN LA PAZ (PostgreSQL)
+        # Abrir canales con los componentes del clúster
+        conn_central = conectar_central() 
         conn_lp = conectar_lp()
-        cur_lp = conn_lp.cursor()
-        sql_lp = """
+        conn_scz = conectar_scz()
+
+        if not conn_central or not conn_lp or not conn_scz:
+            print("❌ Error de infraestructura: Al menos un nodo de la red está inaccesible.")
+            return False
+
+        cursor_central = conn_central.cursor()
+        cursor_lp = conn_lp.cursor()
+        cursor_scz = conn_scz.cursor()
+
+        # =====================================================================
+        # PASO A: DEFINICIÓN DE QUERIES SEGÚN EL MOTOR DE BASE DE DATOS
+        # =====================================================================
+        
+        # Query para POSTGRESQL (Nodo La Paz) -> Utiliza %s
+        sql_publico_postgres = """
             INSERT INTO cliente_publico (id_cliente, nombre, apellido_paterno, apellido_materno, telefono, fecha_registro)
             VALUES (%s, %s, %s, %s, %s, %s);
         """
-        cur_lp.execute(sql_lp, (id_cliente_global, nombre, apellido_paterno, apellido_materno, telefono, fecha_actual))
 
-        # 2. INSERCION EN SANTA CRUZ (SQL Server)
-        conn_scz = conectar_scz()
-        cur_scz = conn_scz.cursor()
-        sql_scz = """
+        # Query para SQL SERVER (Nodo Santa Cruz y Central) -> Utiliza ?
+        sql_publico_sqlserver = """
             INSERT INTO CLIENTE_PUBLICO (id_cliente, nombre, apellido_paterno, apellido_materno, telefono, fecha_registro)
             VALUES (?, ?, ?, ?, ?, ?);
         """
-        cur_scz.execute(sql_scz, (id_cliente_global, nombre, apellido_paterno, apellido_materno, telefono, fecha_actual))
+        
+        valores_publico = (id_cliente_nuevo, nombre, apellido_paterno, apellido_materno, telefono, fecha_actual)
 
-        # 3. INSERCION EN NODO CENTRAL (SQL Server)
-        conn_central = conectar_central()
-        cur_central = conn_central.cursor()
+        # =====================================================================
+        # PASO B: INSERCIÓN EN COMPONENTE PÚBLICO
+        # =====================================================================
+        # Inserción en La Paz (PostgreSQL) usando su respectiva sintaxis
+        cursor_lp.execute(sql_publico_postgres, valores_publico)
 
-        sql_central_pub = """
-            INSERT INTO CLIENTE_PUBLICO (id_cliente, nombre, apellido_paterno, apellido_materno, telefono, fecha_registro)
-            VALUES (?, ?, ?, ?, ?, ?);
-        """
-        cur_central.execute(sql_central_pub, (id_cliente_global, nombre, apellido_paterno, apellido_materno, telefono, fecha_actual))
+        # Inserción en Santa Cruz (SQL Server)
+        cursor_scz.execute(sql_publico_sqlserver, valores_publico)
 
-        sql_central_priv = """
+        # Inserción en el Nodo Central (SQL Server)
+        cursor_central.execute(sql_publico_sqlserver, valores_publico)
+
+        # =====================================================================
+        # PASO C: INSERCIÓN EN COMPONENTE PRIVADO (Exclusivo de Nodo Central - SQL Server)
+        # =====================================================================
+        sql_privado_sqlserver = """
             INSERT INTO CLIENTE_PRIVADO (id_cliente, documento_identidad, direccion, email)
             VALUES (?, ?, ?, ?);
         """
-        cur_central.execute(sql_central_priv, (id_cliente_global, nit_ci, direccion, email))
+        valores_privado = (id_cliente_nuevo, nit_ci, direccion, email)
+        cursor_central.execute(sql_privado_sqlserver, valores_privado)
 
+        # =====================================================================
+        # PASO D: COMMIT ATÓMICO MULTI-NODO
+        # =====================================================================
         conn_lp.commit()
         conn_scz.commit()
         conn_central.commit()
         
+        print(f"✅ Transacción multi-nodo exitosa. UUID: {id_cliente_nuevo} replicado globalmente.")
         return True
 
     except Exception as e:
-        if conn_lp: conn_lp.rollback()
-        if conn_scz: conn_scz.rollback()
-        if conn_central: conn_central.rollback()
-        print(f"--> [DISTRIBUTED TRANSACTION ROLLBACK]: {str(e)}")
-        raise e
+        print(f"🚨 Error en la transacción distribuida, aplicando Rollback general. Motivo: {str(e)}")
+        for conn in [conn_lp, conn_scz, conn_central]:
+            if conn:
+                try:
+                    conn.rollback()
+                except:
+                    pass
+        return False
+
     finally:
-        if cur_lp: cur_lp.close()
-        if conn_lp: conn_lp.close()
-        if cur_scz: cur_scz.close()
-        if conn_scz: conn_scz.close()
-        if cur_central: cur_central.close()
+        # Cierre seguro de recursos
+        if 'cursor_central' in locals(): cursor_central.close()
+        if 'cursor_lp' in locals(): cursor_lp.close()
+        if 'cursor_scz' in locals(): cursor_scz.close()
         if conn_central: conn_central.close()
+        if conn_lp: conn_lp.close()
+        if conn_scz: conn_scz.close()
 
 
 def obtener_clientes_local_lp():

@@ -17,6 +17,8 @@ from respuestas import respuesta_ok, respuesta_error
 from logs.logger import registrar_log
 from conexiones import conectar_lp, conectar_scz, conectar_central
 from clientes import obtener_clientes_local_lp, obtener_clientes_local_scz, obtener_clientes_local_central
+from almacenes import obtener_almacenes_global, registrar_almacen_nodo, modificar_almacen_nodo, eliminar_almacen_nodo, sincronizar_almacenes_cascada
+from rutas import obtener_rutas_global, registrar_ruta_nodo, modificar_ruta_nodo, eliminar_ruta_nodo, sincronizar_rutas_cascada
 import logging
 
 def respuesta_ok(data): return {"success": True, "data": data}
@@ -636,54 +638,102 @@ def inicio_nodo_regional(ciudad):
 # ENDPOINT DE ALMACENES (REPLICACIÓN TOTAL)
 # ===================================
 
+# ==============================================================================
+# ENDPOINTS DE LECTURA (REGIONAL Y GLOBAL)
+# ==============================================================================
+
 @app.route('/api/almacenes/<nodo>', methods=['GET'])
-def api_listar_almacenes(nodo):
-    """Consulta la tabla replicada 'almacen' de forma íntegra sin filtros de jurisdicción"""
+def api_listar_almacenes_regional(nodo):
+    """Consulta la tabla local de un fragmento regional específico."""
     try:
         token = nodo.lower().strip().replace('-', '_')
         lista_almacenes = []
-
-        # Consulta SQL pura y dura idéntica para cualquier nodo debido a la REPLICACIÓN TOTAL
         query_completa = "SELECT id_almacen, nombre, ciudad, direccion, nodo_responsable FROM almacen"
 
-        if "santa" in token:
-            
-            try:
-                conn = conectar_scz() 
-                cursor = conn.cursor()
-                cursor.execute(query_completa)
-                for row in cursor.fetchall():
-                    lista_almacenes.append({
-                        "id_almacen": row[0], "nombre": row[1], "ciudad": row[2], "direccion": row[3], "nodo_responsable": row[4]
-                    })
-                cursor.close()
-                conn.close()
-                pass
-            except Exception as db_err:
-                registrar_log(f"⚠️ Error físico al conectar con SQL Server: {db_err}.")
-
+        if "santa" in token or "scz" in token:
+            conn = conectar_scz()
         else:
+            conn = conectar_lp()
             
-            try:
-                conn = conectar_lp()
-                cursor = conn.cursor()
-                cursor.execute(query_completa)
-                for row in cursor.fetchall():
-                    lista_almacenes.append({
-                        "id_almacen": row[0], "nombre": row[1], "ciudad": row[2], "direccion": row[3], "nodo_responsable": row[4]
-                    })
-                cursor.close()
-                conn.close()
-                pass
-            except Exception as db_err:
-                registrar_log(f"⚠️ Error físico al conectar con PostgreSQL: {db_err}.")
-
-        # Si todo marcha bien (o por la vía de respaldo resiliente), devolvemos las tuplas íntegras
-        return jsonify(respuesta_ok(lista_almacenes))
-
+        cursor = conn.cursor()
+        cursor.execute(query_completa)
+        for row in cursor.fetchall():
+            lista_almacenes.append({
+                "id_almacen": row[0], "nombre": row[1], "ciudad": row[2], "direccion": row[3], "nodo_responsable": row[4]
+            })
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True, "data": lista_almacenes}), 200
     except Exception as e:
-        registrar_log(f"❌ Fallo crítico en el mapeo de replicación: {e}")
-        return jsonify(respuesta_error(str(e))), 500
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/almacen/listar', methods=['GET'])
+def api_listar_almacenes_global():
+    try:
+        almacenes = obtener_almacenes_global() 
+        return jsonify({"success": True, "data": almacenes}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/almacen/crear', methods=['POST'])
+def api_crear_almacen():
+    try:
+        data = request.json or {}
+        id_almacen = data.get('id_almacen')
+        nombre = data.get('nombre')
+        ciudad = data.get('ciudad')
+        direccion = data.get('direccion')
+        nodo_responsable = data.get('nodo_responsable')
+
+        exito = registrar_almacen_nodo(id_almacen, nombre, ciudad, direccion, nodo_responsable)
+        if exito:
+            return jsonify({"success": True, "mensaje": "Almacén creado globalmente."}), 200
+        return jsonify({"success": False, "error": "Llave duplicada o falla de red."}), 400
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/almacen/editar', methods=['POST'])
+def api_editar_almacen():
+    try:
+        data = request.json or {}
+        id_almacen = data.get('id_almacen')
+        nombre = data.get('nombre')
+        ciudad = data.get('ciudad')
+        direccion = data.get('direccion')
+        nodo_responsable = data.get('nodo_responsable')
+
+        exito = modificar_almacen_nodo(id_almacen, nombre, ciudad, direccion, nodo_responsable)
+        if exito:
+            return jsonify({"success": True, "mensaje": "Almacén actualizado globalmente."}), 200
+        return jsonify({"success": False, "error": "No se pudo actualizar."}), 400
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/almacen/eliminar', methods=['POST'])
+def api_eliminar_almacen():
+    try:
+        data = request.json or {}
+        id_almacen = data.get('id_almacen')
+        exito = eliminar_almacen_nodo(id_almacen)
+        if exito:
+            return jsonify({"success": True, "mensaje": "Almacén eliminado globalmente."}), 200
+        return jsonify({"success": False, "error": "Error al eliminar."}), 400
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/almacen/sincronizar', methods=['POST'])
+def api_sincronizar_almacenes():
+    try:
+        if sincronizar_almacenes_cascada():
+            return jsonify({"success": True, "mensaje": "Catálogos alineados."}), 200
+        return jsonify({"success": False, "error": "Sincronización fallida."}), 500
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # ===================================
 # ENDPOINTS DE MOVIMIENTOS EN RAMPA (BD REAL)
@@ -939,6 +989,95 @@ def api_sincronizar_estados_cascada():
     else:
         return jsonify({"success": False, "error": resultado.get("error", "Error desconocido de clúster")}), 500
 
+
+@app.route('/api/rutas/<nodo>', methods=['GET'])
+def api_listar_rutas_regional(nodo):
+    try:
+        token = nodo.lower().strip().replace('-', '_')
+        lista_rutas = []
+        query = "SELECT id_ruta, id_almacen_origen, id_almacen_destino, descripcion FROM ruta"
+
+        if "santa" in token or "scz" in token:
+            conn = conectar_scz()
+        else:
+            conn = conectar_lp()
+            
+        cursor = conn.cursor()
+        cursor.execute(query)
+        for row in cursor.fetchall():
+            lista_rutas.append({
+                "id_ruta": row[0], 
+                "id_almacen_origen": row[1], 
+                "id_almacen_destino": row[2], 
+                "descripcion": row[3]
+            })
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True, "data": lista_rutas}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/ruta/listar', methods=['GET'])
+def api_listar_rutas_global():
+    try:
+        rutas = obtener_rutas_global()
+        return jsonify({"success": True, "data": rutas}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/ruta/crear', methods=['POST'])
+def api_crear_ruta():
+    try:
+        data = request.json or {}
+        id_ruta = data.get('id_ruta')
+        id_origen = data.get('id_almacen_origen')
+        id_destino = data.get('id_almacen_destino')
+        descripcion = data.get('descripcion')
+
+        if registrar_ruta_nodo(id_ruta, id_origen, id_destino, descripcion):
+            return jsonify({"success": True, "mensaje": "Ruta propagada con éxito."}), 200
+        return jsonify({"success": False, "error": "Falla de claves: Asegúrate que los IDs de almacén existan y que no se repita el par Origen-Destino."}), 400
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/ruta/editar', methods=['POST'])
+def api_editar_ruta():
+    try:
+        data = request.json or {}
+        id_ruta = data.get('id_ruta')
+        id_origen = data.get('id_almacen_origen')
+        id_destino = data.get('id_almacen_destino')
+        descripcion = data.get('descripcion')
+
+        if modificar_ruta_nodo(id_ruta, id_origen, id_destino, descripcion):
+            return jsonify({"success": True, "mensaje": "Modificación aplicada globalmente."}), 200
+        return jsonify({"success": False, "error": "No se pudo actualizar."}), 400
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/ruta/eliminar', methods=['POST'])
+def api_eliminar_ruta():
+    try:
+        data = request.json or {}
+        if eliminar_ruta_nodo(data.get('id_ruta')):
+            return jsonify({"success": True, "mensaje": "Trayecto revocado de la red."}), 200
+        return jsonify({"success": False, "error": "Error al eliminar."}), 400
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/ruta/sincronizar', methods=['POST'])
+def api_sincronizar_rutas():
+    try:
+        if sincronizar_rutas_cascada():
+            return jsonify({"success": True, "mensaje": "Catálogos de rutas alineados con éxito."}), 200
+        return jsonify({"success": False, "error": "Falla en reconciliación forzada."}), 500
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(
